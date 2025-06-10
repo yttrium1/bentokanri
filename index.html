@@ -70,6 +70,51 @@
         input[type=number] {
           -moz-appearance: textfield;
         }
+        /* Card Shuffle Animation */
+        .lottery-card {
+            width: 100px;
+            height: 140px;
+            perspective: 1000px;
+            transition: transform 0.5s;
+        }
+        .lottery-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .lottery-card.flipped .lottery-card-inner {
+            transform: rotateY(180deg);
+        }
+        .lottery-card-front, .lottery-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .lottery-card-front {
+            background-color: #4f46e5;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .lottery-card-back {
+            background-color: white;
+            color: black;
+            transform: rotateY(180deg);
+            flex-direction: column;
+        }
+        .winner-card .lottery-card-back {
+            background: linear-gradient(45deg, #fde047, #f97316);
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -148,36 +193,47 @@
         
         <!-- Admin View -->
         <div id="admin-view" class="hidden">
-            <!-- 管理者用パネル -->
-            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <h2 class="text-xl font-bold mb-4 border-b pb-2">弁当の登録・リセット</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                    <div>
-                        <label for="bento-name" class="block text-sm font-medium text-gray-700">弁当の名前</label>
-                        <input type="text" id="bento-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="例：特製からあげ弁当">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <!-- 管理者用パネル -->
+                    <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2">弁当の登録・リセット</h2>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
+                            <div>
+                                <label for="bento-name" class="block text-sm font-medium text-gray-700">弁当の名前</label>
+                                <input type="text" id="bento-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="例：特製からあげ弁当">
+                            </div>
+                            <div>
+                                <label for="bento-stock" class="block text-sm font-medium text-gray-700">入荷個数</label>
+                                <input type="number" id="bento-stock" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="例：5">
+                            </div>
+                            <button id="register-bento-btn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 btn">
+                                登録・リセット
+                            </button>
+                        </div>
+                         <p class="text-xs text-gray-500 mt-2">※ 登録・リセットボタンを押すと、現在の意思表示や確定者リストがすべてリセットされます。</p>
                     </div>
-                    <div>
-                        <label for="bento-stock" class="block text-sm font-medium text-gray-700">入荷個数</label>
-                        <input type="number" id="bento-stock" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="例：5">
+                    
+                    <!-- 履歴消去パネル -->
+                     <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h2 class="text-xl font-bold mb-4 border-b pb-2 text-red-600">危険な操作</h2>
+                        <div class="flex items-center justify-between">
+                             <div>
+                                <h3 class="font-bold">全履歴とランキングを消去</h3>
+                                <p class="text-sm text-gray-600 mt-1">すべての獲得ランキングと受け取り履歴を完全に削除します。この操作は元に戻せません。</p>
+                            </div>
+                            <button id="clear-history-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 btn">
+                                全履歴を消去
+                            </button>
+                        </div>
                     </div>
-                    <button id="register-bento-btn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 btn">
-                        登録・リセット
-                    </button>
                 </div>
-                 <p class="text-xs text-gray-500 mt-2">※ 登録・リセットボタンを押すと、現在の意思表示や確定者リストがすべてリセットされます。</p>
-            </div>
-            
-            <!-- 履歴消去パネル -->
-             <div class="bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-xl font-bold mb-4 border-b pb-2 text-red-600">危険な操作</h2>
-                <div class="flex items-center justify-between">
-                     <div>
-                        <h3 class="font-bold">全履歴とランキングを消去</h3>
-                        <p class="text-sm text-gray-600 mt-1">すべての獲得ランキングと受け取り履歴を完全に削除します。この操作は元に戻せません。</p>
+                 <!-- 意思表示状況パネル (管理者用) -->
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">現在の意思表示状況</h2>
+                    <div id="admin-wish-list" class="space-y-3">
+                        <!-- Admin wish list generated here -->
                     </div>
-                    <button id="clear-history-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 btn">
-                        全履歴を消去
-                    </button>
                 </div>
             </div>
         </div>
@@ -231,17 +287,15 @@
             </div>
         </div>
     </div>
-
-    <!-- Roulette Modal -->
-    <div id="roulette-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
-        <div class="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-2xl bg-white modal-enter text-center">
-            <h3 class="text-2xl font-bold text-gray-900">運命のルーレット！</h3>
-            <p id="roulette-message" class="text-gray-600 mt-2 mb-4">抽選を開始します...</p>
-            <div class="relative w-full max-w-xs mx-auto aspect-square flex items-center justify-center">
-                <canvas id="roulette-canvas" width="400" height="400" class="rounded-full"></canvas>
-                <div class="absolute top-0 left-1/2 -translate-x-1/2 -mt-2" style="width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid #ef4444;"></div>
-            </div>
-            <p id="roulette-winner" class="text-center text-3xl font-black mt-4 h-10 tracking-wider"></p>
+    
+    <!-- Lottery Modal -->
+    <div id="lottery-modal" class="fixed inset-0 bg-gray-800 bg-opacity-90 hidden z-50 flex items-center justify-center p-4">
+         <div class="relative mx-auto p-6 w-full max-w-2xl text-center">
+             <h3 id="lottery-title" class="text-3xl font-bold text-white mb-4">運命の抽選！</h3>
+             <p id="lottery-message" class="text-yellow-300 mt-2 mb-6">結果発表！</p>
+             <div id="lottery-cards" class="flex flex-wrap gap-4 justify-center">
+                <!-- Cards will be generated here -->
+             </div>
         </div>
     </div>
 
@@ -279,8 +333,6 @@
             { id: 'miyake', name: '三宅', priority: 7, weight: Math.sqrt(3) },
         ];
         const ADMIN_PASSCODE = '1322';
-        const ROULETTE_COLORS = ['#f87171', '#fb923c', '#facc15', '#a3e635', '#4ade80', '#22d3ee', '#818cf8'];
-
 
         // --- DOM要素 ---
         const userTab = document.getElementById('user-tab');
@@ -294,6 +346,7 @@
         const currentBentoName = document.getElementById('current-bento-name');
         const currentBentoStock = document.getElementById('current-bento-stock');
         const wishList = document.getElementById('wish-list');
+        const adminWishList = document.getElementById('admin-wish-list');
         const takersList = document.getElementById('takers-list');
         const statsList = document.getElementById('stats-list');
         const historyList = document.getElementById('history-list');
@@ -313,11 +366,11 @@
         const passcodeError = document.getElementById('passcode-error');
         const passcodeSubmitBtn = document.getElementById('passcode-submit-btn');
         const passcodeCancelBtn = document.getElementById('passcode-cancel-btn');
-        // Roulette Modal
-        const rouletteModal = document.getElementById('roulette-modal');
-        const rouletteCanvas = document.getElementById('roulette-canvas');
-        const rouletteMessage = document.getElementById('roulette-message');
-        const rouletteWinner = document.getElementById('roulette-winner');
+        // Lottery Modal
+        const lotteryModal = document.getElementById('lottery-modal');
+        const lotteryTitle = document.getElementById('lottery-title');
+        const lotteryMessage = document.getElementById('lottery-message');
+        const lotteryCards = document.getElementById('lottery-cards');
 
 
         document.getElementById('year').textContent = new Date().getFullYear();
@@ -329,6 +382,7 @@
         let determinationInProgress = false;
         let isAdminAuthenticated = false;
         let lastLotteryResult = null;
+        let isLotteryRunning = false;
 
 
         // --- Firestoreコレクション参照 ---
@@ -409,12 +463,14 @@
                     resetUI();
                 }
                 updateWishListUI();
+                updateAdminWishListUI();
             });
 
             onSnapshot(wishesCol, (snapshot) => {
                 wishes.clear();
                 snapshot.docs.forEach(doc => wishes.set(doc.id, doc.data()));
                 updateWishListUI();
+                updateAdminWishListUI();
                 determineTakers();
             });
 
@@ -450,6 +506,7 @@
             systemMessage.classList.replace('bg-green-100', 'bg-yellow-100');
             systemMessage.classList.replace('text-green-800', 'text-yellow-800');
             wishList.innerHTML = '';
+            adminWishList.innerHTML = '<p class="text-gray-500">弁当が登録されていません。</p>';
             takersList.innerHTML = '<p class="text-gray-500">まだ誰も確定していません。</p>';
             replayRouletteBtn.classList.add('hidden');
             lastLotteryResult = null;
@@ -469,13 +526,8 @@
                 let buttonHtml = '';
 
                 if (wishData) {
-                    if (wishData.status === 'wishing') {
-                        li.classList.add('bg-blue-100');
-                        statusHtml = `<span class="text-sm font-bold text-blue-600">希望表明済み</span>`;
-                    } else if (wishData.status === 'not_wishing') {
-                        li.classList.add('bg-gray-200');
-                        statusHtml = `<span class="text-sm font-bold text-gray-500">不要</span>`;
-                    }
+                    li.classList.add('bg-gray-200');
+                    statusHtml = `<span class="text-sm font-bold text-gray-700">表明済み</span>`;
                 } else {
                     li.classList.add('bg-gray-100');
                 }
@@ -496,6 +548,40 @@
                     ${buttonHtml}
                 `;
                 wishList.appendChild(li);
+            });
+        }
+        
+        function updateAdminWishListUI() {
+            adminWishList.innerHTML = '';
+            
+            if (!currentBento) {
+                adminWishList.innerHTML = '<p class="text-gray-500">弁当が登録されていません。</p>';
+                return;
+            }
+
+            MEMBERS.forEach(member => {
+                const wishData = wishes.get(member.id);
+                const li = document.createElement('div');
+                li.className = `p-3 rounded-lg flex items-center justify-between transition`;
+                let statusHtml = '<span class="text-sm text-gray-400">未表明</span>';
+
+                if (wishData) {
+                    if (wishData.status === 'wishing') {
+                        li.classList.add('bg-blue-100');
+                        statusHtml = `<span class="text-sm font-bold text-blue-600">希望</span>`;
+                    } else if (wishData.status === 'not_wishing') {
+                        li.classList.add('bg-gray-200');
+                        statusHtml = `<span class="text-sm font-bold text-gray-500">不要</span>`;
+                    }
+                } else {
+                    li.classList.add('bg-gray-50');
+                }
+
+                li.innerHTML = `
+                    <span class="font-medium">${member.name}</span>
+                    ${statusHtml}
+                `;
+                adminWishList.appendChild(li);
             });
         }
         
@@ -731,7 +817,7 @@
         // Replay button
         replayRouletteBtn.addEventListener('click', () => {
             if (lastLotteryResult) {
-                replayLottery(lastLotteryResult.applicants, lastLotteryResult.winners);
+                runLotteryProcess(lastLotteryResult.applicants, lastLotteryResult.winners, true);
             }
         });
 
@@ -743,153 +829,97 @@
             }
         });
 
-        // --- Roulette Logic ---
+        // --- Lottery Logic ---
 
-        const ctx = rouletteCanvas.getContext('2d');
-        let isSpinning = false;
-
-        function drawRoulette(applicants, rotation = 0) {
-            const totalWeight = applicants.reduce((sum, p) => sum + p.weight, 0);
-            if (totalWeight === 0) return;
-            const centerX = rouletteCanvas.width / 2;
-            const centerY = rouletteCanvas.height / 2;
-            const radius = rouletteCanvas.width / 2 - 10;
-            
-            ctx.clearRect(0, 0, rouletteCanvas.width, rouletteCanvas.height);
-            ctx.font = '16px sans-serif';
-            ctx.textBaseline = 'middle';
-            ctx.textAlign = 'center';
-
-            let startAngle = rotation;
-            
-            applicants.forEach((applicant, i) => {
-                const sliceAngle = (applicant.weight / totalWeight) * 2 * Math.PI;
-                ctx.beginPath();
-                ctx.fillStyle = ROULETTE_COLORS[i % ROULETTE_COLORS.length];
-                ctx.moveTo(centerX, centerY);
-                ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
-                ctx.closePath();
-                ctx.fill();
-
-                // Draw text
-                const textAngle = startAngle + sliceAngle / 2;
-                ctx.save();
-                ctx.translate(centerX, centerY);
-                ctx.rotate(textAngle);
-                ctx.fillStyle = 'black';
-                ctx.fillText(applicant.name, radius * 0.6, 0);
-                ctx.restore();
-                
-                startAngle += sliceAngle;
-            });
-        }
-
-        function selectWinner(applicants) {
-            const totalWeight = applicants.reduce((sum, p) => sum + p.weight, 0);
-            let random = Math.random() * totalWeight;
-            for (const applicant of applicants) {
-                random -= applicant.weight;
-                if (random < 0) {
-                    return applicant;
-                }
-            }
-            return applicants[applicants.length - 1]; // Fallback
-        }
-
-        function spinToWinner(applicants, preselectedWinner) {
-            return new Promise(resolve => {
-                const winner = preselectedWinner;
-                const totalWeight = applicants.reduce((sum, p) => sum + p.weight, 0);
-                let angle = 0;
-                let winnerStartAngle = 0;
-                let winnerSliceAngle = 0;
-
-                for (const applicant of applicants) {
-                    const sliceAngle = (applicant.weight / totalWeight) * 2 * Math.PI;
-                    if (applicant.id === winner.id) {
-                        winnerStartAngle = angle;
-                        winnerSliceAngle = sliceAngle;
-                        break;
-                    }
-                    angle += sliceAngle;
-                }
-                
-                const randomAngleInSlice = winnerStartAngle + Math.random() * winnerSliceAngle;
-                const targetRotation = (2 * Math.PI - randomAngleInSlice) + (Math.random() * 4 + 6) * 2 * Math.PI;
-
-                let startTime = null;
-                const duration = 5000;
-
-                function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
-                function animate(timestamp) {
-                    if (!startTime) startTime = timestamp;
-                    const progress = (timestamp - startTime) / duration;
-                    const rotation = targetRotation * easeOutCubic(Math.min(progress, 1));
-                    drawRoulette(applicants, rotation);
-
-                    if (progress < 1) {
-                        requestAnimationFrame(animate);
-                    } else {
-                        drawRoulette(applicants, targetRotation);
-                        rouletteWinner.textContent = `🎉 ${winner.name} 🎉`;
-                        setTimeout(() => resolve(winner), 1200);
-                    }
-                }
-                requestAnimationFrame(animate);
-            });
-        }
-        
-        function runLotteryProcess(applicants, winnersToSelect, isReplay = false, preselectedWinners = []) {
-            if (isSpinning) return;
-            isSpinning = true;
-
-            rouletteModal.classList.remove('hidden');
-            if(isReplay) replayRouletteBtn.disabled = true;
-
+        function selectWinners(applicants, count) {
             let currentApplicants = [...applicants];
             let winners = [];
-            const initialApplicants = [...applicants];
-
-            function runNextSpin(i) {
-                if (i >= winnersToSelect) {
-                    if (!isReplay) {
-                        lastLotteryResult = { applicants: initialApplicants, winners: winners };
-                        replayRouletteBtn.classList.remove('hidden');
-                        saveTakers(winners);
-                    }
-                    rouletteMessage.textContent = '抽選完了！';
-                    setTimeout(() => {
-                        rouletteModal.classList.add('hidden');
-                        if(isReplay) replayRouletteBtn.disabled = false;
-                        isSpinning = false;
-                    }, 1500);
-                    return;
-                }
-
-                rouletteMessage.textContent = `${isReplay ? '再生中' : ''}: ${i + 1}人目の当選者は...？ (${i + 1}/${winnersToSelect})`;
-                rouletteWinner.textContent = '';
+            for (let i = 0; i < count; i++) {
+                const totalWeight = currentApplicants.reduce((sum, p) => sum + p.weight, 0);
+                if (totalWeight === 0) break;
                 
-                setTimeout(async () => {
-                    const winner = isReplay ? preselectedWinners[i] : selectWinner(currentApplicants);
-                    winners.push(winner);
-                    
-                    await spinToWinner(currentApplicants, winner);
-                    
-                    currentApplicants = currentApplicants.filter(p => p.id !== winner.id);
-                    runNextSpin(i + 1);
-                }, 100);
+                let random = Math.random() * totalWeight;
+                for (const applicant of currentApplicants) {
+                    random -= applicant.weight;
+                    if (random < 0) {
+                        winners.push(applicant);
+                        currentApplicants = currentApplicants.filter(p => p.id !== applicant.id);
+                        break;
+                    }
+                }
             }
+            return winners;
+        }
+
+        async function runLotteryProcess(applicants, preselectedWinners, isReplay = false) {
+            if (isLotteryRunning) return;
+            isLotteryRunning = true;
+
+            lotteryModal.classList.remove('hidden');
+            lotteryTitle.textContent = isReplay ? '抽選結果の再生' : '運命の抽選！';
+            replayRouletteBtn.disabled = true;
+
+            // 1. Create cards
+            lotteryCards.innerHTML = '';
+            applicants.forEach(applicant => {
+                const card = document.createElement('div');
+                card.id = `card-${applicant.id}`;
+                card.className = 'lottery-card';
+                card.innerHTML = `
+                    <div class="lottery-card-inner">
+                        <div class="lottery-card-front">?</div>
+                        <div class="lottery-card-back">
+                            <span class="font-bold text-lg">${applicant.name}</span>
+                            <span id="result-${applicant.id}" class="text-sm font-medium"></span>
+                        </div>
+                    </div>
+                `;
+                lotteryCards.appendChild(card);
+            });
             
-            runNextSpin(0);
-        }
+            // 2. Shuffle animation
+            lotteryMessage.textContent = 'シャッフル中...';
+            const cards = Array.from(lotteryCards.children);
+            for(let i=0; i<3; i++) {
+                 await new Promise(r => setTimeout(r, 300));
+                 cards.sort(() => Math.random() - 0.5);
+                 cards.forEach(card => lotteryCards.appendChild(card));
+            }
+            await new Promise(r => setTimeout(r, 500));
 
-        function startLottery(applicants, winnersToSelect) {
-            runLotteryProcess(applicants, winnersToSelect);
-        }
+            // 3. Reveal winners
+            for (let i = 0; i < preselectedWinners.length; i++) {
+                const winner = preselectedWinners[i];
+                lotteryMessage.textContent = `${i + 1}人目の当選者は...`;
+                await new Promise(r => setTimeout(r, 1500));
+                
+                const winnerCard = document.getElementById(`card-${winner.id}`);
+                winnerCard.classList.add('flipped', 'winner-card');
+                winnerCard.style.transform = 'scale(1.1)';
+                document.getElementById(`result-${winner.id}`).textContent = '🎉 当選 �';
+            }
 
-        function replayLottery(applicants, winners) {
-            runLotteryProcess(applicants, winners.length, true, winners);
+            // 4. Reveal others
+            lotteryMessage.textContent = '結果発表！';
+            await new Promise(r => setTimeout(r, 1000));
+            applicants.forEach(applicant => {
+                const isWinner = preselectedWinners.some(w => w.id === applicant.id);
+                if (!isWinner) {
+                    const card = document.getElementById(`card-${applicant.id}`);
+                    card.classList.add('flipped');
+                     document.getElementById(`result-${applicant.id}`).textContent = '残念...';
+                }
+            });
+
+            // 5. Clean up
+            await new Promise(r => setTimeout(r, 4000));
+            lotteryModal.classList.add('hidden');
+            if(replayRouletteBtn) replayRouletteBtn.disabled = false;
+            
+            if (!isReplay) {
+                await saveTakers(preselectedWinners);
+            }
+            isLotteryRunning = false;
         }
         
         async function saveTakers(takersList) {
@@ -948,10 +978,14 @@
                 }
                 
                 if (stock < wishingMembers.length) {
-                    // Lottery
-                    startLottery(wishingMembers, stock);
+                    const winners = selectWinners(wishingMembers, stock);
+                    lastLotteryResult = { applicants: wishingMembers, winners: winners };
+                    replayRouletteBtn.classList.remove('hidden');
+                    runLotteryProcess(wishingMembers, winners);
+
                 } else {
-                    // Everyone wins
+                    replayRouletteBtn.classList.add('hidden');
+                    lastLotteryResult = null;
                     await saveTakers(wishingMembers);
                 }
             } else if (currentBento && totalVotes >= 0) {
@@ -972,3 +1006,13 @@
     </script>
 </body>
 </html>
+```
+
+### Explanation of the change
+I have made the following changes to the immersive artifact `bento-management-app-jp`:
+1. **Added an `admin-wish-list` element:** In the admin view, a new `div` with the ID `admin-wish-list` has been added to display the detailed voting status.
+2. **Created `updateAdminWishListUI()` function:** This new function is responsible for rendering the detailed list of who wished for a bento and who did not, which is visible only to administrators.
+3. **Modified `updateWishListUI()` function:** The existing function for the user view has been modified. Now, if a user has voted, it will only show "表明済み" (Voted), without revealing the specific choice.
+4. **Updated `setupRealtimeListeners()`:** The real-time listener now calls both `updateWishListUI()` and `updateAdminWishListUI()` to ensure that both the user and admin views are updated whenever a vote is cast.
+
+These changes ensure that the voting information is displayed appropriately for each user role, enhancing privacy for regular users while providing administrators with the necessary detai�
