@@ -60,8 +60,8 @@
     <div class="container mx-auto p-4 md:p-8 max-w-5xl">
 
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">弁当振り分け</h1>
-            <p class="text-gray-600 mt-2"></p>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">社内弁当争奪戦！</h1>
+            <p class="text-gray-600 mt-2">今日の弁当はなんだろう？リアルタイムで在庫をチェック！</p>
         </header>
 
         <!-- 管理者用パネル -->
@@ -131,7 +131,7 @@
             </div>
         </div>
         <footer class="text-center mt-12 text-sm text-gray-500">
-            <p>&copy; <span id="year"></span> 弁当管理システム</p>
+            <p>&copy; <span id="year"></span> 社内弁当管理システム</p>
         </footer>
     </div>
     
@@ -156,27 +156,26 @@
     </div>
 
     <script type="module">
-        // Firebase設定（実際の値に置き換えてください）
-        const firebaseConfig = typeof __firebase_config !== 'undefined'
-            ? JSON.parse(__firebase_config)
-            : {
-                apiKey: "YOUR_API_KEY",
-                authDomain: "YOUR_AUTH_DOMAIN",
-                projectId: "YOUR_PROJECT_ID",
-                storageBucket: "YOUR_STORAGE_BUCKET",
-                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-                appId: "YOUR_APP_ID"
-            };
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bento-app-default';
-
         // Firebase モジュールのインポート
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, writeBatch, runTransaction, deleteDoc } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
         
+        // あなたのウェブアプリのFirebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6atYGL6U4a6-20qz_g1NCmRKwfA8aEds",
+            authDomain: "bento-app-2025.firebaseapp.com",
+            projectId: "bento-app-2025",
+            storageBucket: "bento-app-2025.appspot.com",
+            messagingSenderId: "157224537828",
+            appId: "1:157224537828:web:a8388a63eff8e451bba6f1",
+            measurementId: "G-PBBMCG5L3Y"
+        };
+
         // アプリの初期化
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bento-app-default';
 
         // --- 定数定義 ---
         const MEMBERS = [
@@ -280,7 +279,7 @@
             if (currentBento) {
                 currentBentoName.textContent = currentBento.name;
                 currentBentoStock.textContent = currentBento.current_stock;
-                systemMessage.textContent = '食べたい人は「希望する」ボタンを押してください！';
+                systemMessage.textContent = '食べたい人は意思表示をしてください！';
                 systemMessage.classList.replace('bg-yellow-100', 'bg-green-100');
                 systemMessage.classList.replace('text-yellow-800', 'text-green-800');
             }
@@ -302,21 +301,41 @@
             const noBento = !currentBento || currentBento.current_stock <= 0;
 
             MEMBERS.forEach(member => {
-                const hasWished = wishes.has(member.id);
+                const wishData = wishes.get(member.id);
                 const li = document.createElement('div');
-                li.className = `p-3 rounded-lg flex items-center justify-between transition ${hasWished ? 'bg-blue-100' : 'bg-gray-100'}`;
+                li.className = `p-3 rounded-lg flex items-center justify-between transition`;
+
+                let statusHtml = '';
+                let buttonHtml = '';
+
+                if (wishData) {
+                    if (wishData.status === 'wishing') {
+                        li.classList.add('bg-blue-100');
+                        statusHtml = `<span class="text-sm font-bold text-blue-600">希望表明済み</span>`;
+                    } else if (wishData.status === 'not_wishing') {
+                        li.classList.add('bg-gray-200');
+                        statusHtml = `<span class="text-sm font-bold text-gray-500">不要</span>`;
+                    }
+                } else {
+                    li.classList.add('bg-gray-100');
+                }
+
+                if (!wishData && !areTakersDecided && !noBento) {
+                    buttonHtml = `
+                        <div class="flex space-x-2">
+                            <button data-id="${member.id}" class="wish-btn bg-green-500 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-green-600 btn">希望する</button>
+                            <button data-id="${member.id}" class="no-wish-btn bg-gray-400 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-500 btn">不要</button>
+                        </div>
+                    `;
+                }
+
                 li.innerHTML = `
                     <span class="font-medium">${member.name}</span>
-                    ${hasWished ? '<span class="text-sm font-bold text-blue-600">希望表明済み</span>' : ''}
-                    <button data-id="${member.id}" class="wish-btn bg-green-500 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-green-600 btn">希望する</button>
+                    <div class="flex-grow"></div>
+                    ${statusHtml}
+                    ${buttonHtml}
                 `;
                 wishList.appendChild(li);
-
-                const btn = li.querySelector('.wish-btn');
-                if (hasWished || areTakersDecided || noBento) {
-                    btn.disabled = true;
-                    btn.classList.add('hidden');
-                }
             });
         }
         
@@ -417,17 +436,24 @@
         });
 
         wishList.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('wish-btn')) {
-                const userId = e.target.dataset.id;
-                const member = MEMBERS.find(m => m.id === userId);
-                if (member) {
-                    e.target.disabled = true;
-                    await setDoc(doc(wishesCol, userId), {
-                        name: member.name,
-                        priority: member.priority,
-                        timestamp: new Date()
-                    });
-                }
+            const target = e.target;
+            const userId = target.dataset.id;
+            if (!userId) return;
+
+            const member = MEMBERS.find(m => m.id === userId);
+            if (!member) return;
+            
+            const buttonContainer = target.parentElement;
+
+            if (target.classList.contains('wish-btn') || target.classList.contains('no-wish-btn')) {
+                buttonContainer.innerHTML = '<span class="text-sm text-gray-500">処理中...</span>';
+                const status = target.classList.contains('wish-btn') ? 'wishing' : 'not_wishing';
+                await setDoc(doc(wishesCol, userId), {
+                    name: member.name,
+                    priority: member.priority,
+                    status: status,
+                    timestamp: new Date()
+                });
             }
         });
         
@@ -481,22 +507,37 @@
 
         // --- コアロジック ---
         async function determineTakers() {
-            if (determinationInProgress || !currentBento || takers.size > 0 || wishes.size === 0) {
+            if (determinationInProgress || !currentBento || takers.size > 0) {
                 return;
             }
 
             const stock = currentBento.initial_stock;
-            const wishingMembers = Array.from(wishes.values()).sort((a,b) => a.priority - b.priority);
+            const totalVotes = wishes.size;
+            const totalMembers = MEMBERS.length;
+
+            const wishingMembers = Array.from(wishes.values())
+                .filter(w => w.status === 'wishing')
+                .sort((a, b) => a.priority - b.priority);
+
+            let newTakers = [];
+            let shouldDetermine = false;
 
             if (wishingMembers.length >= stock) {
-                determinationInProgress = true;
-                const newTakers = wishingMembers.slice(0, stock);
+                newTakers = wishingMembers.slice(0, stock);
+                shouldDetermine = true;
+            }
+            else if (totalVotes === totalMembers && wishingMembers.length > 0) {
+                newTakers = wishingMembers;
+                shouldDetermine = true;
+            }
 
+            if (shouldDetermine) {
+                determinationInProgress = true;
                 const batch = writeBatch(db);
                 newTakers.forEach(taker => {
                     const member = MEMBERS.find(m => m.priority === taker.priority);
-                    if(member){
-                         batch.set(doc(takersCol, member.id), {
+                    if (member) {
+                        batch.set(doc(takersCol, member.id), {
                             name: member.name,
                             priority: member.priority,
                             taken: false,
@@ -509,7 +550,7 @@
                     await batch.commit();
                     console.log("確定者が決定しました。");
                     systemMessage.textContent = '本日の弁当GET組が確定しました！おめでとうございます！';
-                } catch(error) {
+                } catch (error) {
                     console.error("確定者の書き込みに失敗:", error);
                 } finally {
                     determinationInProgress = false;
