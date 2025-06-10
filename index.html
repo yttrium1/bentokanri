@@ -34,6 +34,25 @@
             70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
             100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
+        /* Modal styles */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-leave {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .modal-leave-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -116,10 +135,28 @@
         </footer>
     </div>
     
+    <!-- Modal for notifications -->
+    <div id="custom-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
+        <div id="modal-content" class="relative mx-auto p-5 border w-11/12 md:max-w-md shadow-lg rounded-md bg-white modal-enter">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">通知</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p id="modal-message" class="text-sm text-gray-600"></p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="modal-close-btn" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         // Firebase設定（実際の値に置き換えてください）
-        // このコードはCanvas環境で動作するように設定されています。
-        // ローカルで試す場合は、ご自身のFirebaseプロジェクトの設定情報を貼り付けてください。
         const firebaseConfig = typeof __firebase_config !== 'undefined'
             ? JSON.parse(__firebase_config)
             : {
@@ -135,7 +172,7 @@
 
         // Firebase モジュールのインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // アプリの初期化
         const app = initializeApp(firebaseConfig);
@@ -164,6 +201,10 @@
         const historyList = document.getElementById('history-list');
         const systemMessage = document.getElementById('system-message');
         const bentoInfoCard = document.getElementById('bento-info-card');
+        const customModal = document.getElementById('custom-modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
         document.getElementById('year').textContent = new Date().getFullYear();
 
         // --- グローバル変数 ---
@@ -173,16 +214,30 @@
         let determinationInProgress = false;
 
         // --- Firestoreコレクション参照 ---
-        const bentoCol = collection(db, 'artifacts', appId, 'public', 'data', 'bento');
+        const bentoDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'bento/current');
         const wishesCol = collection(db, 'artifacts', appId, 'public', 'data', 'wishes');
         const takersCol = collection(db, 'artifacts', appId, 'public', 'data', 'takers');
         const statsCol = collection(db, 'artifacts', appId, 'public', 'data', 'stats');
         const historyCol = collection(db, 'artifacts', appId, 'public', 'data', 'history');
-        const bentoDocRef = doc(bentoCol, 'current');
+
+        // --- モーダル関数 ---
+        function showModal(message) {
+            modalMessage.textContent = message;
+            customModal.classList.remove('hidden');
+            modalContent.classList.remove('modal-leave', 'modal-leave-active');
+            modalContent.classList.add('modal-enter-active');
+        }
+
+        function hideModal() {
+            modalContent.classList.remove('modal-enter-active');
+            modalContent.classList.add('modal-leave-active');
+            setTimeout(() => {
+                customModal.classList.add('hidden');
+            }, 300);
+        }
 
         // --- リアルタイムリスナー設定 ---
         function setupRealtimeListeners() {
-            // 弁当情報
             onSnapshot(bentoDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     currentBento = { id: docSnap.id, ...docSnap.data() };
@@ -193,10 +248,9 @@
                     currentBento = null;
                     resetUI();
                 }
-                updateWishListUI(); // 弁当の状態が変わったら意思表示UIも更新
+                updateWishListUI();
             });
 
-            // 意思表示
             onSnapshot(wishesCol, (snapshot) => {
                 wishes.clear();
                 snapshot.docs.forEach(doc => wishes.set(doc.id, doc.data()));
@@ -204,22 +258,19 @@
                 determineTakers();
             });
 
-            // 確定者
             onSnapshot(takersCol, (snapshot) => {
                 takers.clear();
                 snapshot.docs.forEach(doc => takers.set(doc.id, doc.data()));
                 updateTakersListUI();
             });
             
-            // 統計
             onSnapshot(statsCol, (snapshot) => {
                 const stats = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                 updateStatsListUI(stats);
             });
 
-            // 履歴
-            onSnapshot(historyCol, (snapshot) => {
-                const history = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp - a.timestamp);
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'history'), (snapshot) => {
+                const history = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.toMillis() - a.timestamp.toMillis());
                 updateHistoryListUI(history);
             });
         }
@@ -231,7 +282,7 @@
                 currentBentoStock.textContent = currentBento.current_stock;
                 systemMessage.textContent = '食べたい人は「希望する」ボタンを押してください！';
                 systemMessage.classList.replace('bg-yellow-100', 'bg-green-100');
-                 systemMessage.classList.replace('text-yellow-800', 'text-green-800');
+                systemMessage.classList.replace('text-yellow-800', 'text-green-800');
             }
         }
         
@@ -329,7 +380,7 @@
              history.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'p-1.5 bg-gray-50 rounded';
-                const date = new Date(item.timestamp.seconds * 1000).toLocaleString('ja-JP');
+                const date = item.timestamp.toDate().toLocaleString('ja-JP');
                 div.textContent = `${date}: ${item.name}さんが${item.bento_name}を受け取り`;
                 historyList.appendChild(div);
              });
@@ -337,25 +388,19 @@
 
 
         // --- イベントハンドラ ---
-        
-        // 弁当登録
         registerBentoBtn.addEventListener('click', async () => {
             const name = bentoNameInput.value.trim();
             const stock = parseInt(bentoStockInput.value, 10);
 
             if (!name || isNaN(stock) || stock <= 0) {
-                alert('有効な弁当の名前と個数を入力してください。');
+                showModal('有効な弁当の名前と個数を入力してください。');
                 return;
             }
 
-            // 古いデータを全削除
             const batch = writeBatch(db);
-            const wishesSnapshot = await getDoc(collection(db, 'artifacts', appId, 'public', 'data', 'wishes'));
-            const takersSnapshot = await getDoc(collection(db, 'artifacts', appId, 'public', 'data', 'takers'));
             wishes.forEach((val, key) => batch.delete(doc(wishesCol, key)));
             takers.forEach((val, key) => batch.delete(doc(takersCol, key)));
             
-            // 新しい弁当情報をセット
             const newBentoData = {
                 name: name,
                 initial_stock: stock,
@@ -368,10 +413,9 @@
             
             bentoNameInput.value = '';
             bentoStockInput.value = '';
-            alert(`${name}を${stock}個で登録しました。`);
+            showModal(`${name}を${stock}個で登録しました。`);
         });
 
-        // 意思表示
         wishList.addEventListener('click', async (e) => {
             if (e.target.classList.contains('wish-btn')) {
                 const userId = e.target.dataset.id;
@@ -387,7 +431,6 @@
             }
         });
         
-        // 受け取り確定
         takersList.addEventListener('click', async (e) => {
             if (e.target.classList.contains('take-btn')) {
                 const takerId = e.target.dataset.id;
@@ -405,21 +448,15 @@
                              throw "すでに受け取り済みです。";
                         }
 
-                        // 1. 在庫を減らす
-                        const newStock = bentoSnap.data().current_stock - 1;
-                        transaction.update(bentoDocRef, { current_stock: newStock });
-
-                        // 2. Takerを更新 (taken: true)
+                        transaction.update(bentoDocRef, { current_stock: bentoSnap.data().current_stock - 1 });
                         transaction.update(doc(takersCol, takerId), { taken: true });
 
-                        // 3. 統計を更新
                         const statDocRef = doc(statsCol, takerId);
                         const statSnap = await transaction.get(statDocRef);
                         const newTotal = (statSnap.exists() ? statSnap.data().total_taken : 0) + 1;
                         transaction.set(statDocRef, { total_taken: newTotal, name: takerSnap.data().name }, { merge: true });
 
-                        // 4. 履歴に追加
-                        const historyDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'history')); // 新規ドキュメント
+                        const historyDocRef = doc(historyCol);
                         transaction.set(historyDocRef, {
                             userId: takerId,
                             name: takerSnap.data().name,
@@ -427,16 +464,22 @@
                             timestamp: new Date()
                         });
                     });
-                    console.log("受け取り処理が正常に完了しました。");
                 } catch (error) {
                     console.error("受け取り処理中にエラーが発生しました: ", error);
-                    alert("エラーが発生しました。ページをリロードして再度お試しください。");
+                    showModal("エラーが発生しました：" + error);
+                    e.target.disabled = false; // エラー時はボタンを再度有効化
                 }
             }
         });
 
-        // --- コアロジック ---
+        modalCloseBtn.addEventListener('click', hideModal);
+        customModal.addEventListener('click', (e) => {
+            if (e.target === customModal) {
+                hideModal();
+            }
+        });
 
+        // --- コアロジック ---
         async function determineTakers() {
             if (determinationInProgress || !currentBento || takers.size > 0 || wishes.size === 0) {
                 return;
