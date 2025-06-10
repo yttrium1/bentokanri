@@ -117,7 +117,15 @@
                 <div>
                     <!-- 確定者リスト -->
                     <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-                        <h3 class="text-xl font-bold mb-4">🎉 本日の弁当GET組</h3>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold">🎉 本日の弁当GET組</h3>
+                            <button id="replay-roulette-btn" class="hidden bg-gray-200 text-gray-700 text-xs font-bold py-1 px-2 rounded-md hover:bg-gray-300 btn flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7V9a1 1 0 01-2 0V3a1 1 0 011-1zm12 1a1 1 0 011 1v6a1 1 0 01-2 0V9.899a7.002 7.002 0 01-11.601-2.566 1 1 0 111.885-.666A5.002 5.002 0 0014.001 13V11a1 1 0 012 0v6a1 1 0 01-1 1H9a1 1 0 110-2h4.001v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 111.885-.666A5.002 5.002 0 0014.001 7V9a1 1 0 012 0V3a1 1 0 01-1-1h4z" clip-rule="evenodd" />
+                                </svg>
+                                再生
+                            </button>
+                        </div>
                         <div id="takers-list" class="space-y-3">
                             <p class="text-gray-500">まだ誰も確定していません。</p>
                         </div>
@@ -291,6 +299,7 @@
         const historyList = document.getElementById('history-list');
         const systemMessage = document.getElementById('system-message');
         const bentoInfoCard = document.getElementById('bento-info-card');
+        const replayRouletteBtn = document.getElementById('replay-roulette-btn');
         // Notification Modal
         const customModal = document.getElementById('custom-modal');
         const modalContent = document.getElementById('modal-content');
@@ -319,6 +328,8 @@
         let takers = new Map();
         let determinationInProgress = false;
         let isAdminAuthenticated = false;
+        let lastLotteryResult = null;
+
 
         // --- Firestoreコレクション参照 ---
         const bentoDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'bento/current');
@@ -440,6 +451,8 @@
             systemMessage.classList.replace('text-green-800', 'text-yellow-800');
             wishList.innerHTML = '';
             takersList.innerHTML = '<p class="text-gray-500">まだ誰も確定していません。</p>';
+            replayRouletteBtn.classList.add('hidden');
+            lastLotteryResult = null;
         }
 
         function updateWishListUI() {
@@ -714,6 +727,14 @@
                 }
             }
         });
+        
+        // Replay button
+        replayRouletteBtn.addEventListener('click', () => {
+            if (lastLotteryResult) {
+                replayLottery(lastLotteryResult.applicants, lastLotteryResult.winners);
+            }
+        });
+
 
         // Modal close
         customModal.addEventListener('click', (e) => {
@@ -773,11 +794,10 @@
             return applicants[0]; // Fallback
         }
 
-        async function spinAndGetWinner(applicants) {
+        async function spinToWinner(applicants, preselectedWinner = null) {
             return new Promise(resolve => {
-                const winner = selectWinner(applicants);
+                const winner = preselectedWinner || selectWinner(applicants);
                 
-                // Calculate winner's angle range
                 const totalWeight = applicants.reduce((sum, p) => sum + p.weight, 0);
                 let angle = 0;
                 let winnerStartAngle = 0;
@@ -793,40 +813,33 @@
                     angle += sliceAngle;
                 }
                 
-                // Target angle within the winner's slice
                 const randomAngleInSlice = winnerStartAngle + Math.random() * winnerSliceAngle;
-                const targetRotation = (2 * Math.PI - randomAngleInSlice) + (Math.random() * 4 + 4) * 2 * Math.PI;
+                const targetRotation = (2 * Math.PI - randomAngleInSlice) + (Math.random() * 4 + 6) * 2 * Math.PI;
 
                 let currentRotation = 0;
-                let velocity = 0;
-                const acceleration = 0.0005;
-                let isSlowingDown = false;
-                
-                function animate() {
-                    if (!isSlowingDown) {
-                        velocity += acceleration;
-                        if (velocity > 0.3) velocity = 0.3; // Max speed
-                    } else {
-                        velocity *= 0.98; // Decelerate
-                    }
+                let startTime = null;
+                const duration = 5000; // 5 seconds spin
 
-                    currentRotation += velocity;
+                function easeOutCubic(t) {
+                    return 1 - Math.pow(1 - t, 3);
+                }
+
+                function animate(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    const progress = (timestamp - startTime) / duration;
+                    
+                    currentRotation = targetRotation * easeOutCubic(Math.min(progress, 1));
                     drawRoulette(applicants, currentRotation);
 
-                    if (!isSlowingDown && currentRotation > targetRotation / 2) {
-                        isSlowingDown = true;
-                    }
-                    
-                    if (velocity < 0.001 && isSlowingDown) {
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        drawRoulette(applicants, targetRotation);
                         rouletteWinner.textContent = `🎉 ${winner.name} 🎉`;
-                        setTimeout(() => resolve(winner), 1000); // Wait a bit after stopping
-                        return;
+                        setTimeout(() => resolve(winner), 1000);
                     }
-                    
-                    requestAnimationFrame(animate);
                 }
-                
-                animate();
+                requestAnimationFrame(animate);
             });
         }
         
@@ -834,24 +847,47 @@
             rouletteModal.classList.remove('hidden');
             let currentApplicants = [...applicants];
             let winners = [];
+            const initialApplicants = [...applicants];
 
             for (let i = 0; i < winnersToSelect; i++) {
                 rouletteMessage.textContent = `${i + 1}人目の当選者は...？ (${i + 1}/${winnersToSelect})`;
                 rouletteWinner.textContent = '';
-                const winner = await spinAndGetWinner(currentApplicants);
+                const winner = await spinToWinner(currentApplicants);
                 winners.push(winner);
                 currentApplicants = currentApplicants.filter(p => p.id !== winner.id);
             }
             
+            lastLotteryResult = { applicants: initialApplicants, winners: winners };
+            replayRouletteBtn.classList.remove('hidden');
+
             rouletteMessage.textContent = '抽選完了！';
             setTimeout(async () => {
                 rouletteModal.classList.add('hidden');
                 await saveTakers(winners);
             }, 1500);
         }
+        
+        async function replayLottery(applicants, winners) {
+            rouletteModal.classList.remove('hidden');
+            replayRouletteBtn.disabled = true;
+            let currentApplicants = [...applicants];
+            
+            for (let i = 0; i < winners.length; i++) {
+                rouletteMessage.textContent = `再生中: ${i + 1}人目の当選者... (${i + 1}/${winners.length})`;
+                rouletteWinner.textContent = '';
+                const winnerToLandOn = winners[i];
+                await spinToWinner(currentApplicants, winnerToLandOn);
+                currentApplicants = currentApplicants.filter(p => p.id !== winnerToLandOn.id);
+            }
+
+            rouletteMessage.textContent = '再生完了！';
+            setTimeout(() => {
+                rouletteModal.classList.add('hidden');
+                replayRouletteBtn.disabled = false;
+            }, 1500);
+        }
 
         async function saveTakers(takersList) {
-            determinationInProgress = true;
             try {
                 if (takersList.length > 0) {
                     const batch = writeBatch(db);
@@ -871,8 +907,6 @@
             } catch (error) {
                 console.error("確定者の書き込みに失敗:", error);
                 showModal("確定者の決定処理中にエラーが発生しました。");
-            } finally {
-                determinationInProgress = false;
             }
         }
 
@@ -906,14 +940,12 @@
                     return;
                 }
                 
-                // 弁当の在庫が希望者数より少ない場合にルーレット
                 if (stock < wishingMembers.length) {
-                    await startLottery(wishingMembers, stock);
+                    startLottery(wishingMembers, stock);
                 } else {
-                    // 在庫が足りていれば全員当選
-                    await saveTakers(wishingMembers);
+                    saveTakers(wishingMembers);
                 }
-
+                // note: determinationInProgress is set to false within startLottery->saveTakers or directly in saveTakers
             } else if (currentBento && totalVotes >= 0) {
                 const remainingVotes = totalMembers - totalVotes;
                  if (remainingVotes > 0) {
