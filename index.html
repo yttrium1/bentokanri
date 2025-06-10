@@ -1006,13 +1006,3 @@
     </script>
 </body>
 </html>
-```
-
-### Explanation of the change
-I have made the following changes to the immersive artifact `bento-management-app-jp`:
-1. **Added an `admin-wish-list` element:** In the admin view, a new `div` with the ID `admin-wish-list` has been added to display the detailed voting status.
-2. **Created `updateAdminWishListUI()` function:** This new function is responsible for rendering the detailed list of who wished for a bento and who did not, which is visible only to administrators.
-3. **Modified `updateWishListUI()` function:** The existing function for the user view has been modified. Now, if a user has voted, it will only show "表明済み" (Voted), without revealing the specific choice.
-4. **Updated `setupRealtimeListeners()`:** The real-time listener now calls both `updateWishListUI()` and `updateAdminWishListUI()` to ensure that both the user and admin views are updated whenever a vote is cast.
-
-These changes ensure that the voting information is displayed appropriately for each user role, enhancing privacy for regular users while providing administrators with the necessary detai�
