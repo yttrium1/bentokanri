@@ -346,25 +346,27 @@
                 return;
             }
 
-            const sortedTakers = Array.from(takers.values()).sort((a,b) => a.priority - b.priority);
+            const sortedTakers = Array.from(takers.entries()).sort((a,b) => a[1].priority - b[1].priority);
             
-            sortedTakers.forEach(taker => {
+            sortedTakers.forEach(([id, takerData]) => {
                 const div = document.createElement('div');
-                div.className = `p-3 rounded-lg flex items-center justify-between ${taker.taken ? 'bg-gray-200' : 'bg-yellow-100'}`;
+                let statusOrButtonHtml = '';
+
+                if (takerData.taken) {
+                    div.className = 'p-3 rounded-lg flex items-center justify-between bg-green-100 text-gray-800';
+                    statusOrButtonHtml = `<span class="text-sm font-bold text-green-800">受け取り完了</span>`;
+                } else {
+                    div.className = 'p-3 rounded-lg flex items-center justify-between bg-yellow-100';
+                    statusOrButtonHtml = `<button data-id="${id}" class="take-btn bg-orange-500 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-orange-600 btn">未受け取り</button>`;
+                }
+
                 div.innerHTML = `
                     <div>
-                        <span class="font-bold text-gray-800">${taker.name}</span>
-                        ${taker.taken ? '<span class="text-xs ml-2 text-green-700">受取済</span>' : ''}
+                        <span class="font-bold text-gray-800">${takerData.name}</span>
                     </div>
-                    <button data-id="${taker.id}" class="take-btn bg-orange-500 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-orange-600 btn">受け取った</button>
+                    ${statusOrButtonHtml}
                 `;
                 takersList.appendChild(div);
-
-                const btn = div.querySelector('.take-btn');
-                if (taker.taken) {
-                    btn.disabled = true;
-                    btn.classList.add('hidden');
-                }
             });
         }
 
@@ -460,29 +462,37 @@
         takersList.addEventListener('click', async (e) => {
             if (e.target.classList.contains('take-btn')) {
                 const takerId = e.target.dataset.id;
-                e.target.disabled = true;
+                e.target.disabled = true; // Double-click prevention
                 
                 try {
                     await runTransaction(db, async (transaction) => {
+                        // --- 全ての読み取りを先に実行 ---
                         const bentoSnap = await transaction.get(bentoDocRef);
+                        const takerSnap = await transaction.get(doc(takersCol, takerId));
+                        const statDocRef = doc(statsCol, takerId);
+                        const statSnap = await transaction.get(statDocRef);
+
+                        // --- 読み取り後のデータ検証 ---
                         if (!bentoSnap.exists() || bentoSnap.data().current_stock <= 0) {
                             throw "弁当の在庫がありません。";
                         }
-                        
-                        const takerSnap = await transaction.get(doc(takersCol, takerId));
                         if (!takerSnap.exists() || takerSnap.data().taken) {
-                             throw "すでに受け取り済みです。";
+                             throw "すでに受け取り済みか、対象者ではありません。";
                         }
 
+                        // --- 全ての書き込みを後に実行 ---
+                        // 1. 在庫を減らす
                         transaction.update(bentoDocRef, { current_stock: bentoSnap.data().current_stock - 1 });
+                        
+                        // 2. 受け取り済みにする
                         transaction.update(doc(takersCol, takerId), { taken: true });
 
-                        const statDocRef = doc(statsCol, takerId);
-                        const statSnap = await transaction.get(statDocRef);
+                        // 3. 統計を更新
                         const newTotal = (statSnap.exists() ? statSnap.data().total_taken : 0) + 1;
                         transaction.set(statDocRef, { total_taken: newTotal, name: takerSnap.data().name }, { merge: true });
 
-                        const historyDocRef = doc(historyCol);
+                        // 4. 履歴に追加
+                        const historyDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'history'));
                         transaction.set(historyDocRef, {
                             userId: takerId,
                             name: takerSnap.data().name,
@@ -493,7 +503,6 @@
                 } catch (error) {
                     console.error("受け取り処理中にエラーが発生しました: ", error);
                     showModal("エラーが発生しました：" + error);
-                    e.target.disabled = false; // エラー時はボタンを再度有効化
                 }
             }
         });
@@ -511,50 +520,49 @@
                 return;
             }
 
-            const stock = currentBento.initial_stock;
             const totalVotes = wishes.size;
             const totalMembers = MEMBERS.length;
 
-            const wishingMembers = Array.from(wishes.values())
-                .filter(w => w.status === 'wishing')
-                .sort((a, b) => a.priority - b.priority);
-
-            let newTakers = [];
-            let shouldDetermine = false;
-
-            if (wishingMembers.length >= stock) {
-                newTakers = wishingMembers.slice(0, stock);
-                shouldDetermine = true;
-            }
-            else if (totalVotes === totalMembers && wishingMembers.length > 0) {
-                newTakers = wishingMembers;
-                shouldDetermine = true;
-            }
-
-            if (shouldDetermine) {
+            // 全員の投票が完了した場合のみ、当選者決定処理に進む
+            if (totalVotes === totalMembers) {
                 determinationInProgress = true;
-                const batch = writeBatch(db);
-                newTakers.forEach(taker => {
-                    const member = MEMBERS.find(m => m.priority === taker.priority);
-                    if (member) {
-                        batch.set(doc(takersCol, member.id), {
-                            name: member.name,
-                            priority: member.priority,
-                            taken: false,
-                            timestamp: new Date()
-                        });
-                    }
-                });
-
+                
                 try {
-                    await batch.commit();
-                    console.log("確定者が決定しました。");
-                    systemMessage.textContent = '本日の弁当GET組が確定しました！おめでとうございます！';
+                    const stock = currentBento.initial_stock;
+
+                    const wishingMembers = Array.from(wishes.values())
+                        .filter(w => w.status === 'wishing')
+                        .sort((a, b) => a.priority - b.priority);
+
+                    const newTakers = wishingMembers.slice(0, stock);
+
+                    if (newTakers.length > 0) {
+                        const batch = writeBatch(db);
+                        newTakers.forEach(taker => {
+                            const member = MEMBERS.find(m => m.priority === taker.priority);
+                            if (member) {
+                                batch.set(doc(takersCol, member.id), {
+                                    name: member.name,
+                                    priority: member.priority,
+                                    taken: false,
+                                    timestamp: new Date()
+                                });
+                            }
+                        });
+                        await batch.commit();
+                        systemMessage.textContent = '全員の意思表示が完了し、GET組が確定しました！';
+                    } else {
+                         systemMessage.textContent = '全員が意思表示しましたが、希望者はいませんでした。';
+                    }
                 } catch (error) {
                     console.error("確定者の書き込みに失敗:", error);
+                    showModal("確定者の決定処理中にエラーが発生しました。");
                 } finally {
                     determinationInProgress = false;
                 }
+            } else if (currentBento && totalVotes > 0) {
+                const remainingVotes = totalMembers - totalVotes;
+                systemMessage.textContent = `あと${remainingVotes}人の意思表示待ちです...`;
             }
         }
 
