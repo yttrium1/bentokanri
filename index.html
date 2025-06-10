@@ -211,7 +211,7 @@
                 <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">管理者パスコード</h3>
                 <div class="mt-2 px-7 py-3">
                     <p class="text-sm text-gray-500 mb-4">4桁のパスコードを入力してください。</p>
-                    <input type="number" id="passcode-input" class="text-center text-2xl tracking-[1em] w-full bg-gray-100 rounded-md p-2" maxlength="4" />
+                    <input type="text" id="passcode-input" class="text-center text-3xl tracking-[0.5em] w-full bg-gray-100 rounded-md p-2" inputmode="numeric" pattern="[0-9]*" maxlength="4" />
                     <p id="passcode-error" class="text-red-500 text-sm h-4 mt-2"></p>
                 </div>
                 <div class="items-center px-4 py-3">
@@ -221,6 +221,19 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Roulette Modal -->
+    <div id="roulette-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
+        <div class="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-2xl bg-white modal-enter text-center">
+            <h3 class="text-2xl font-bold text-gray-900">運命のルーレット！</h3>
+            <p id="roulette-message" class="text-gray-600 mt-2 mb-4">抽選を開始します...</p>
+            <div class="relative w-full max-w-xs mx-auto aspect-square flex items-center justify-center">
+                <canvas id="roulette-canvas" width="400" height="400" class="rounded-full"></canvas>
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 -mt-2" style="width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid #ef4444;"></div>
+            </div>
+            <p id="roulette-winner" class="text-center text-3xl font-black mt-4 h-10 tracking-wider"></p>
         </div>
     </div>
 
@@ -249,15 +262,17 @@
 
         // --- 定数定義 ---
         const MEMBERS = [
-            { id: 'kono', name: '河野', priority: 1 },
-            { id: 'matsumura', name: '松村', priority: 2 },
-            { id: 'suzuki', name: '鈴木', priority: 3 },
-            { id: 'ito', name: '伊藤', priority: 4 },
-            { id: 'hori', name: '堀', priority: 5 },
-            { id: 'kasuga', name: '春日', priority: 6 },
-            { id: 'miyake', name: '三宅', priority: 7 },
+            { id: 'kono', name: '河野', priority: 1, weight: Math.sqrt(29) },
+            { id: 'matsumura', name: '松村', priority: 2, weight: Math.sqrt(17) },
+            { id: 'suzuki', name: '鈴木', priority: 3, weight: Math.sqrt(14) },
+            { id: 'ito', name: '伊藤', priority: 4, weight: Math.sqrt(10) },
+            { id: 'hori', name: '堀', priority: 5, weight: Math.sqrt(6) },
+            { id: 'kasuga', name: '春日', priority: 6, weight: Math.sqrt(5) },
+            { id: 'miyake', name: '三宅', priority: 7, weight: Math.sqrt(3) },
         ];
         const ADMIN_PASSCODE = '1322';
+        const ROULETTE_COLORS = ['#f87171', '#fb923c', '#facc15', '#a3e635', '#4ade80', '#22d3ee', '#818cf8'];
+
 
         // --- DOM要素 ---
         const userTab = document.getElementById('user-tab');
@@ -289,6 +304,12 @@
         const passcodeError = document.getElementById('passcode-error');
         const passcodeSubmitBtn = document.getElementById('passcode-submit-btn');
         const passcodeCancelBtn = document.getElementById('passcode-cancel-btn');
+        // Roulette Modal
+        const rouletteModal = document.getElementById('roulette-modal');
+        const rouletteCanvas = document.getElementById('roulette-canvas');
+        const rouletteMessage = document.getElementById('roulette-message');
+        const rouletteWinner = document.getElementById('roulette-winner');
+
 
         document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -559,7 +580,7 @@
             if (passcodeInput.value === ADMIN_PASSCODE) {
                 isAdminAuthenticated = true;
                 hidePasscodeModal();
-                adminTab.click(); // Programmatically click to switch view
+                adminTab.click();
             } else {
                 passcodeError.textContent = 'パスコードが違います。';
                 passcodeInput.value = '';
@@ -569,7 +590,7 @@
         passcodeCancelBtn.addEventListener('click', hidePasscodeModal);
         passcodeInput.addEventListener('keyup', (e) => {
              passcodeError.textContent = '';
-             if (e.key === 'Enter') {
+             if (e.key === 'Enter' && passcodeInput.value.length === 4) {
                  passcodeSubmitBtn.click();
              }
         });
@@ -586,8 +607,10 @@
             }
 
             const batch = writeBatch(db);
-            wishes.forEach((val, key) => batch.delete(doc(wishesCol, key)));
-            takers.forEach((val, key) => batch.delete(doc(takersCol, key)));
+            const wishesSnapshot = await getDocs(wishesCol);
+            wishesSnapshot.forEach(doc => batch.delete(doc.ref));
+            const takersSnapshot = await getDocs(takersCol);
+            takersSnapshot.forEach(doc => batch.delete(doc.ref));
             
             const newBentoData = {
                 name: name,
@@ -659,7 +682,7 @@
         takersList.addEventListener('click', async (e) => {
             if (e.target.classList.contains('take-btn')) {
                 const takerId = e.target.dataset.id;
-                e.target.disabled = true; // Double-click prevention
+                e.target.disabled = true;
                 
                 try {
                     await runTransaction(db, async (transaction) => {
@@ -699,6 +722,160 @@
             }
         });
 
+        // --- Roulette Logic ---
+
+        const ctx = rouletteCanvas.getContext('2d');
+
+        function drawRoulette(applicants, rotation = 0) {
+            const totalWeight = applicants.reduce((sum, p) => sum + p.weight, 0);
+            const centerX = rouletteCanvas.width / 2;
+            const centerY = rouletteCanvas.height / 2;
+            const radius = rouletteCanvas.width / 2 - 10;
+            
+            ctx.clearRect(0, 0, rouletteCanvas.width, rouletteCanvas.height);
+            ctx.font = '16px sans-serif';
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+
+            let startAngle = rotation;
+            
+            applicants.forEach((applicant, i) => {
+                const sliceAngle = (applicant.weight / totalWeight) * 2 * Math.PI;
+                ctx.beginPath();
+                ctx.fillStyle = ROULETTE_COLORS[i % ROULETTE_COLORS.length];
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw text
+                const textAngle = startAngle + sliceAngle / 2;
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(textAngle);
+                ctx.fillStyle = 'black';
+                ctx.fillText(applicant.name, radius * 0.6, 0);
+                ctx.restore();
+                
+                startAngle += sliceAngle;
+            });
+        }
+
+        function selectWinner(applicants) {
+            const totalWeight = applicants.reduce((sum, p) => sum + p.weight, 0);
+            let random = Math.random() * totalWeight;
+            for (const applicant of applicants) {
+                random -= applicant.weight;
+                if (random < 0) {
+                    return applicant;
+                }
+            }
+            return applicants[0]; // Fallback
+        }
+
+        async function spinAndGetWinner(applicants) {
+            return new Promise(resolve => {
+                const winner = selectWinner(applicants);
+                
+                // Calculate winner's angle range
+                const totalWeight = applicants.reduce((sum, p) => sum + p.weight, 0);
+                let angle = 0;
+                let winnerStartAngle = 0;
+                let winnerSliceAngle = 0;
+
+                for (const applicant of applicants) {
+                    const sliceAngle = (applicant.weight / totalWeight) * 2 * Math.PI;
+                    if (applicant.id === winner.id) {
+                        winnerStartAngle = angle;
+                        winnerSliceAngle = sliceAngle;
+                        break;
+                    }
+                    angle += sliceAngle;
+                }
+                
+                // Target angle within the winner's slice
+                const randomAngleInSlice = winnerStartAngle + Math.random() * winnerSliceAngle;
+                const targetRotation = (2 * Math.PI - randomAngleInSlice) + (Math.random() * 4 + 4) * 2 * Math.PI;
+
+                let currentRotation = 0;
+                let velocity = 0;
+                const acceleration = 0.0005;
+                let isSlowingDown = false;
+                
+                function animate() {
+                    if (!isSlowingDown) {
+                        velocity += acceleration;
+                        if (velocity > 0.3) velocity = 0.3; // Max speed
+                    } else {
+                        velocity *= 0.98; // Decelerate
+                    }
+
+                    currentRotation += velocity;
+                    drawRoulette(applicants, currentRotation);
+
+                    if (!isSlowingDown && currentRotation > targetRotation / 2) {
+                        isSlowingDown = true;
+                    }
+                    
+                    if (velocity < 0.001 && isSlowingDown) {
+                        rouletteWinner.textContent = `🎉 ${winner.name} 🎉`;
+                        setTimeout(() => resolve(winner), 1000); // Wait a bit after stopping
+                        return;
+                    }
+                    
+                    requestAnimationFrame(animate);
+                }
+                
+                animate();
+            });
+        }
+        
+        async function startLottery(applicants, winnersToSelect) {
+            rouletteModal.classList.remove('hidden');
+            let currentApplicants = [...applicants];
+            let winners = [];
+
+            for (let i = 0; i < winnersToSelect; i++) {
+                rouletteMessage.textContent = `${i + 1}人目の当選者は...？ (${i + 1}/${winnersToSelect})`;
+                rouletteWinner.textContent = '';
+                const winner = await spinAndGetWinner(currentApplicants);
+                winners.push(winner);
+                currentApplicants = currentApplicants.filter(p => p.id !== winner.id);
+            }
+            
+            rouletteMessage.textContent = '抽選完了！';
+            setTimeout(async () => {
+                rouletteModal.classList.add('hidden');
+                await saveTakers(winners);
+            }, 1500);
+        }
+
+        async function saveTakers(takersList) {
+            determinationInProgress = true;
+            try {
+                if (takersList.length > 0) {
+                    const batch = writeBatch(db);
+                    takersList.forEach(taker => {
+                        const member = MEMBERS.find(m => m.id === taker.id);
+                        if (member) {
+                            batch.set(doc(takersCol, member.id), {
+                                name: member.name,
+                                priority: member.priority,
+                                taken: false,
+                                timestamp: new Date()
+                            });
+                        }
+                    });
+                    await batch.commit();
+                }
+            } catch (error) {
+                console.error("確定者の書き込みに失敗:", error);
+                showModal("確定者の決定処理中にエラーが発生しました。");
+            } finally {
+                determinationInProgress = false;
+            }
+        }
+
         // --- コアロジック ---
         async function determineTakers() {
             if (determinationInProgress || !currentBento || takers.size > 0) {
@@ -715,41 +892,28 @@
 
             if (totalVotes === totalMembers) {
                 determinationInProgress = true;
-                
-                try {
-                    const stock = currentBento.initial_stock;
+                const stock = currentBento.initial_stock;
+                const wishingMembers = Array.from(wishes.values())
+                    .filter(w => w.status === 'wishing')
+                    .map(wisher => MEMBERS.find(m => m.priority === wisher.priority))
+                    .sort((a, b) => a.priority - b.priority);
 
-                    const wishingMembers = Array.from(wishes.values())
-                        .filter(w => w.status === 'wishing')
-                        .sort((a, b) => a.priority - b.priority);
-
-                    const newTakers = wishingMembers.slice(0, stock);
-
-                    if (newTakers.length > 0) {
-                        const batch = writeBatch(db);
-                        newTakers.forEach(taker => {
-                            const member = MEMBERS.find(m => m.priority === taker.priority);
-                            if (member) {
-                                batch.set(doc(takersCol, member.id), {
-                                    name: member.name,
-                                    priority: member.priority,
-                                    taken: false,
-                                    timestamp: new Date()
-                                });
-                            }
-                        });
-                        await batch.commit();
-                    } else {
-                         systemMessage.textContent = '全員が意思表示しましたが、希望者はいませんでした。';
-                         systemMessage.classList.replace('bg-yellow-100', 'bg-green-100');
-                         systemMessage.classList.replace('text-yellow-800', 'text-green-800');
-                    }
-                } catch (error) {
-                    console.error("確定者の書き込みに失敗:", error);
-                    showModal("確定者の決定処理中にエラーが発生しました。");
-                } finally {
+                if (wishingMembers.length === 0) {
+                    systemMessage.textContent = '全員が意思表示しましたが、希望者はいませんでした。';
+                    systemMessage.classList.replace('bg-yellow-100', 'bg-green-100');
+                    systemMessage.classList.replace('text-yellow-800', 'text-green-800');
                     determinationInProgress = false;
+                    return;
                 }
+                
+                // 弁当の在庫が希望者数より少ない場合にルーレット
+                if (stock < wishingMembers.length) {
+                    await startLottery(wishingMembers, stock);
+                } else {
+                    // 在庫が足りていれば全員当選
+                    await saveTakers(wishingMembers);
+                }
+
             } else if (currentBento && totalVotes >= 0) {
                 const remainingVotes = totalMembers - totalVotes;
                  if (remainingVotes > 0) {
