@@ -381,7 +381,6 @@
         let takers = new Map();
         let determinationInProgress = false;
         let isAdminAuthenticated = false;
-        let lastLotteryResult = null;
         let isLotteryRunning = false;
 
 
@@ -453,11 +452,21 @@
         // --- リアルタイムリスナー設定 ---
         function setupRealtimeListeners() {
             onSnapshot(bentoDocRef, (docSnap) => {
+                const oldBentoData = currentBento;
                 if (docSnap.exists()) {
                     currentBento = { id: docSnap.id, ...docSnap.data() };
                     updateBentoInfoUI();
-                    bentoInfoCard.classList.add('pulse');
-                    setTimeout(() => bentoInfoCard.classList.remove('pulse'), 2000);
+
+                    if (!oldBentoData || oldBentoData.timestamp?.seconds !== currentBento.timestamp?.seconds) {
+                         bentoInfoCard.classList.add('pulse');
+                         setTimeout(() => bentoInfoCard.classList.remove('pulse'), 2000);
+                    }
+
+                    if (currentBento.lotteryCompleted) {
+                        replayRouletteBtn.classList.remove('hidden');
+                    } else {
+                        replayRouletteBtn.classList.add('hidden');
+                    }
                 } else {
                     currentBento = null;
                     resetUI();
@@ -509,7 +518,6 @@
             adminWishList.innerHTML = '<p class="text-gray-500">弁当が登録されていません。</p>';
             takersList.innerHTML = '<p class="text-gray-500">まだ誰も確定していません。</p>';
             replayRouletteBtn.classList.add('hidden');
-            lastLotteryResult = null;
         }
 
         function updateWishListUI() {
@@ -715,7 +723,10 @@
                 name: name,
                 initial_stock: stock,
                 current_stock: stock,
-                timestamp: new Date()
+                timestamp: new Date(),
+                lotteryCompleted: false,
+                lotteryApplicants: [],
+                lotteryWinners: []
             };
             batch.set(bentoDocRef, newBentoData);
 
@@ -816,8 +827,8 @@
         
         // Replay button
         replayRouletteBtn.addEventListener('click', () => {
-            if (lastLotteryResult) {
-                runLotteryProcess(lastLotteryResult.applicants, lastLotteryResult.winners, true);
+            if (currentBento && currentBento.lotteryCompleted) {
+                runLotteryProcess(currentBento.lotteryApplicants, currentBento.lotteryWinners, true);
             }
         });
 
@@ -857,7 +868,7 @@
 
             lotteryModal.classList.remove('hidden');
             lotteryTitle.textContent = isReplay ? '抽選結果の再生' : '運命の抽選！';
-            replayRouletteBtn.disabled = true;
+            if (replayRouletteBtn) replayRouletteBtn.disabled = true;
 
             // 1. Create cards
             lotteryCards.innerHTML = '';
@@ -880,6 +891,7 @@
             // 2. Shuffle animation
             lotteryMessage.textContent = 'シャッフル中...';
             const cards = Array.from(lotteryCards.children);
+            await new Promise(r => setTimeout(r, 100)); // allow cards to render
             for(let i=0; i<3; i++) {
                  await new Promise(r => setTimeout(r, 300));
                  cards.sort(() => Math.random() - 0.5);
@@ -896,7 +908,7 @@
                 const winnerCard = document.getElementById(`card-${winner.id}`);
                 winnerCard.classList.add('flipped', 'winner-card');
                 winnerCard.style.transform = 'scale(1.1)';
-                document.getElementById(`result-${winner.id}`).textContent = '🎉 当選 �';
+                document.getElementById(`result-${winner.id}`).textContent = '🎉 当選 🎉';
             }
 
             // 4. Reveal others
@@ -917,28 +929,37 @@
             if(replayRouletteBtn) replayRouletteBtn.disabled = false;
             
             if (!isReplay) {
-                await saveTakers(preselectedWinners);
+                await saveTakers(applicants, preselectedWinners);
             }
             isLotteryRunning = false;
         }
         
-        async function saveTakers(takersList) {
+        async function saveTakers(applicants, winners) {
             try {
-                if (takersList.length > 0) {
-                    const batch = writeBatch(db);
-                    takersList.forEach(taker => {
-                        const member = MEMBERS.find(m => m.id === taker.id);
-                        if (member) {
-                            batch.set(doc(takersCol, member.id), {
-                                name: member.name,
-                                priority: member.priority,
-                                taken: false,
-                                timestamp: new Date()
-                            });
-                        }
-                    });
-                    await batch.commit();
-                }
+                const batch = writeBatch(db);
+                // 1. Create taker documents for winners
+                winners.forEach(taker => {
+                    const member = MEMBERS.find(m => m.id === taker.id);
+                    if (member) {
+                        batch.set(doc(takersCol, member.id), {
+                            name: member.name,
+                            priority: member.priority,
+                            taken: false,
+                            timestamp: new Date()
+                        });
+                    }
+                });
+                
+                // 2. Mark lottery as complete and save results on bento doc
+                const lotteryResult = {
+                    lotteryCompleted: true,
+                    lotteryApplicants: applicants.map(a => ({ id: a.id, name: a.name })), // Store simplified info
+                    lotteryWinners: winners.map(w => ({ id: w.id, name: w.name }))
+                };
+                batch.update(bentoDocRef, lotteryResult);
+
+                await batch.commit();
+
             } catch (error) {
                 console.error("確定者の書き込みに失敗:", error);
                 showModal("確定者の決定処理中にエラーが発生しました。");
@@ -949,12 +970,7 @@
 
         // --- コアロジック ---
         async function determineTakers() {
-            if (determinationInProgress || !currentBento || takers.size > 0) {
-                if (takers.size > 0 && systemMessage.textContent.includes('待ち')) {
-                     systemMessage.textContent = '全員の意思表示が完了し、GET組が確定しました！';
-                     systemMessage.classList.replace('bg-yellow-100', 'bg-green-100');
-                     systemMessage.classList.replace('text-yellow-800', 'text-green-800');
-                }
+            if (determinationInProgress || !currentBento || currentBento.lotteryCompleted) {
                 return;
             }
 
@@ -973,20 +989,17 @@
                     systemMessage.textContent = '全員が意思表示しましたが、希望者はいませんでした。';
                     systemMessage.classList.replace('bg-yellow-100', 'bg-green-100');
                     systemMessage.classList.replace('text-yellow-800', 'text-green-800');
+                    // Mark as complete even if no one wishes
+                    await updateDoc(bentoDocRef, { lotteryCompleted: true });
                     determinationInProgress = false;
                     return;
                 }
                 
                 if (stock < wishingMembers.length) {
                     const winners = selectWinners(wishingMembers, stock);
-                    lastLotteryResult = { applicants: wishingMembers, winners: winners };
-                    replayRouletteBtn.classList.remove('hidden');
                     runLotteryProcess(wishingMembers, winners);
-
                 } else {
-                    replayRouletteBtn.classList.add('hidden');
-                    lastLotteryResult = null;
-                    await saveTakers(wishingMembers);
+                    await saveTakers(wishingMembers, wishingMembers);
                 }
             } else if (currentBento && totalVotes >= 0) {
                 const remainingVotes = totalMembers - totalVotes;
