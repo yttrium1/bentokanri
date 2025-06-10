@@ -122,8 +122,8 @@
     <div class="container mx-auto p-4 md:p-8 max-w-5xl">
 
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">社内弁当争奪戦！</h1>
-            <p class="text-gray-600 mt-2">今日の弁当はなんだろう？リアルタイムで在庫をチェック！</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">弁当振り分け</h1>
+            <p class="text-gray-600 mt-2">弁当の希望の有無を表明してください。全員投票すると抽選が始まります。当選者は受け取ったら「未受け取り」ボタンをおしてください。</p>
         </header>
 
         <!-- Tab Navigation -->
@@ -324,13 +324,13 @@
 
         // --- 定数定義 ---
         const MEMBERS = [
-            { id: 'kono', name: '河野', priority: 1, weight: Math.sqrt(29) },
-            { id: 'matsumura', name: '松村', priority: 2, weight: Math.sqrt(17) },
-            { id: 'suzuki', name: '鈴木', priority: 3, weight: Math.sqrt(14) },
+            { id: 'kono', name: '河野先生', priority: 1, weight: Math.sqrt(29) },
+            { id: 'matsumura', name: '松村先生', priority: 2, weight: Math.sqrt(17) },
+            { id: 'suzuki', name: '鈴木先生', priority: 3, weight: Math.sqrt(14) },
             { id: 'ito', name: '伊藤', priority: 4, weight: Math.sqrt(10) },
-            { id: 'hori', name: '堀', priority: 5, weight: Math.sqrt(6) },
-            { id: 'kasuga', name: '春日', priority: 6, weight: Math.sqrt(5) },
-            { id: 'miyake', name: '三宅', priority: 7, weight: Math.sqrt(3) },
+            { id: 'hori', name: '堀先生', priority: 5, weight: Math.sqrt(6) },
+            { id: 'kasuga', name: '春日先生', priority: 6, weight: Math.sqrt(5) },
+            { id: 'miyake', name: '三宅先生', priority: 7, weight: Math.sqrt(3) },
         ];
         const ADMIN_PASSCODE = '1322';
 
