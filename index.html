@@ -11,13 +11,11 @@
             font-family: 'Noto Sans JP', 'Inter', sans-serif;
             background-color: #f7fafc;
         }
-        .bento-card {
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            transition: all 0.3s ease-in-out;
+        .soft-shadow {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
-        .bento-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        .soft-shadow:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
         .btn {
             transition: all 0.2s ease;
@@ -30,17 +28,19 @@
             animation: pulse-animation 2s infinite;
         }
         @keyframes pulse-animation {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
         }
         .tab-btn.active {
-            background-color: #4f46e5;
+            background-color: #6366f1;
             color: white;
+            border-color: #e5e7eb;
         }
         .tab-btn {
-             background-color: #e5e7eb;
+             background-color: #f3f4f6;
              color: #374151;
+             border-color: transparent;
         }
         /* Modal styles */
         .modal-enter {
@@ -98,10 +98,10 @@
             align-items: center;
             justify-content: center;
             border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid #e5e7eb;
         }
         .lottery-card-front {
-            background-color: #4f46e5;
+            background-color: #6366f1;
             color: white;
             font-size: 2rem;
             font-weight: bold;
@@ -126,7 +126,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-100 text-gray-800">
 
     <div class="container mx-auto p-4 md:p-8 max-w-5xl">
 
@@ -134,15 +134,15 @@
             <h1 class="text-3xl md:text-4xl font-bold text-gray-800">弁当振分</h1>
             <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mt-4 text-left text-sm" role="alert">
                 <p class="font-bold">説明</p>
-                <p>説明会終了1時間以内に投票お願いします。未投票者は希望しないものとして扱います。当選者は実際に持ち帰ったら、ボタンをおしてください。2ヶ月に1回だけ当選確率が10倍になるJOKERを使えます。</p>
+                <p>説明会終了1時間以内に投票お願いします。未投票者は希望しないものとして扱います。当選者は実際に持ち帰ったら、ボタンをおしてください。2ヶ月に1回だけ当選確率が10倍になるJOKERを使えます。2枚以上保持できません。投票者数による弁当の人気度調査も兼ねています</p>
             </div>
         </header>
 
         <!-- Tab Navigation -->
         <div class="mb-8">
             <div class="flex border-b border-gray-200">
-                <button id="user-tab" class="tab-btn active py-2 px-6 font-medium text-sm rounded-t-lg focus:outline-none">利用者画面</button>
-                <button id="admin-tab" class="tab-btn py-2 px-6 font-medium text-sm rounded-t-lg focus:outline-none">管理者画面</button>
+                <button id="user-tab" class="tab-btn active py-2 px-6 font-medium text-sm rounded-t-lg border-b-2 focus:outline-none">利用者画面</button>
+                <button id="admin-tab" class="tab-btn py-2 px-6 font-medium text-sm rounded-t-lg border-b-2 focus:outline-none">管理者画面</button>
             </div>
         </div>
 
@@ -152,16 +152,16 @@
                 <!-- 左カラム：在庫と意思表示 -->
                 <div class="lg:col-span-2">
                     <!-- 在庫情報 -->
-                    <div id="bento-info-card" class="bento-card bg-white p-6 rounded-xl mb-8">
+                    <div id="bento-info-card" class="bg-white p-6 rounded-xl soft-shadow mb-8">
                         <h2 class="text-2xl font-bold text-gray-900 mb-2" id="current-bento-name">弁当はまだ登録されていません</h2>
                         <div class="flex items-baseline">
-                            <p class="text-5xl font-extrabold text-blue-600" id="current-bento-stock">0</p>
+                            <p class="text-5xl font-extrabold text-indigo-600" id="current-bento-stock">0</p>
                             <p class="ml-2 text-xl text-gray-600">個</p>
                         </div>
                     </div>
 
                     <!-- 意思表示パネル -->
-                    <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="bg-white p-6 rounded-xl soft-shadow">
                         <p id="system-message" class="text-sm text-center p-3 mb-4 bg-yellow-100 text-yellow-800 rounded-lg">弁当が登録されると意思表示を開始できます。</p>
                         <div id="wish-list" class="space-y-3">
                             <!-- JSで社員リストを生成 -->
@@ -172,7 +172,7 @@
                 <!-- 右カラム：確定者と履歴 -->
                 <div>
                     <!-- JOKER Status -->
-                     <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                     <div class="bg-white p-6 rounded-xl soft-shadow mb-8">
                         <h3 class="text-xl font-bold mb-4">🃏 JOKER所持状況</h3>
                         <div id="joker-status-list" class="space-y-2">
                             <!-- JSでJOKER状況を生成 -->
@@ -180,7 +180,7 @@
                     </div>
 
                     <!-- 確定者リスト -->
-                    <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <div class="bg-white p-6 rounded-xl soft-shadow mb-8">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-bold">🎉 本日の弁当GET組</h3>
                             <button id="replay-roulette-btn" class="hidden bg-gray-200 text-gray-700 text-xs font-bold py-1 px-2 rounded-md hover:bg-gray-300 btn flex items-center gap-1">
@@ -194,18 +194,17 @@
                             <p class="text-gray-500">まだ誰も確定していません。</p>
                         </div>
                     </div>
-
-                    <!-- 累計・履歴 -->
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-xl font-bold mb-4">🏆 弁当獲得ランキング</h3>
-                        <div id="stats-list" class="space-y-2 mb-6">
-                            <!-- JSで累計数を生成 -->
-                        </div>
-                        <h3 class="text-xl font-bold mb-4 border-t pt-4">受け取り履歴</h3>
-                        <div id="history-list" class="space-y-2 text-sm max-h-48 overflow-y-auto">
-                             <p class="text-gray-500">まだ受け取り履歴はありません。</p>
-                        </div>
-                    </div>
+                </div>
+            </div>
+             <!-- Past Bento Popularity -->
+            <div class="bg-white p-6 rounded-xl soft-shadow mt-8">
+                <h3 class="text-xl font-bold mb-4">🏆 弁当獲得ランキング</h3>
+                <div id="stats-list" class="space-y-2 mb-6">
+                    <!-- JSで累計数を生成 -->
+                </div>
+                <h3 class="text-xl font-bold mb-4 border-t pt-4">受け取り履歴</h3>
+                <div id="history-list" class="space-y-2 text-sm max-h-48 overflow-y-auto">
+                        <p class="text-gray-500">まだ受け取り履歴はありません。</p>
                 </div>
             </div>
         </div>
@@ -215,18 +214,18 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                     <!-- 管理者用パネル -->
-                    <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <div class="bg-white p-6 rounded-xl soft-shadow mb-8">
                         <h2 class="text-xl font-bold mb-4 border-b pb-2">弁当の登録・リセット</h2>
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
                             <div>
                                 <label for="bento-name" class="block text-sm font-medium text-gray-700">弁当の名前</label>
-                                <input type="text" id="bento-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="例：特製からあげ弁当">
+                                <input type="text" id="bento-name" class="mt-1 block w-full rounded-md border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
                             </div>
                             <div>
                                 <label for="bento-stock" class="block text-sm font-medium text-gray-700">入荷個数</label>
-                                <input type="number" id="bento-stock" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="例：5">
+                                <input type="number" id="bento-stock" class="mt-1 block w-full rounded-md border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
                             </div>
-                            <button id="register-bento-btn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 btn">
+                            <button id="register-bento-btn" class="w-full bg-indigo-500 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 btn">
                                 登録・リセット
                             </button>
                         </div>
@@ -234,15 +233,15 @@
                     </div>
                     
                     <!-- 履歴消去パネル -->
-                     <div class="bg-white p-6 rounded-xl shadow-md">
+                     <div class="bg-white p-6 rounded-xl soft-shadow">
                         <h2 class="text-xl font-bold mb-4 border-b pb-2 text-red-600">危険な操作</h2>
                         <div class="flex items-center justify-between mb-4">
                              <div>
-                                <h3 class="font-bold">全履歴とランキングを消去</h3>
-                                <p class="text-sm text-gray-600 mt-1">すべての獲得ランキングと受け取り履歴を完全に削除します。この操作は元に戻せません。</p>
+                                <h3 class="font-bold">人気投票の履歴を消去</h3>
+                                <p class="text-sm text-gray-600 mt-1">人気投票の履歴のみを削除します。<br>ランキングや個人の獲得履歴は残ります。</p>
                             </div>
-                            <button id="clear-history-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 btn">
-                                全履歴を消去
+                            <button id="clear-popularity-history-btn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 btn">
+                                履歴消去
                             </button>
                         </div>
                         <div class="flex items-center justify-between border-t pt-4">
@@ -250,18 +249,37 @@
                                 <h3 class="font-bold">全JOKERをリセット</h3>
                                 <p class="text-sm text-gray-600 mt-1">全員のJOKERを1枚にリセットします。</p>
                             </div>
-                            <button id="reset-jokers-btn" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 btn">
+                            <button id="reset-jokers-btn" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-md hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 btn">
                                 JOKERリセット
                             </button>
                         </div>
                     </div>
                 </div>
                  <!-- 意思表示状況パネル (管理者用) -->
-                <div class="bg-white p-6 rounded-xl shadow-md">
+                <div class="bg-white p-6 rounded-xl soft-shadow">
                     <h2 class="text-xl font-bold mb-4 border-b pb-2">現在の意思表示状況</h2>
                     <div id="admin-wish-list" class="space-y-3">
                         <!-- Admin wish list generated here -->
                     </div>
+                </div>
+            </div>
+            <!-- Past Bento Popularity -->
+            <div class="bg-white p-6 rounded-xl soft-shadow mt-8">
+                <h3 class="text-xl font-bold mb-4">過去の弁当人気投票 (管理者用)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-200">
+                                <th class="py-2 px-4 text-sm font-medium text-gray-600">日付</th>
+                                <th class="py-2 px-4 text-sm font-medium text-gray-600">弁当の種類</th>
+                                <th class="py-2 px-4 text-sm font-medium text-gray-600 text-center">希望者数</th>
+                                <th class="py-2 px-4 text-sm font-medium text-gray-600 text-center">JOKER使用者数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-bento-history-table-body">
+                           <!-- JSで履歴を生成 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -283,7 +301,7 @@
                     <p id="modal-message" class="text-sm text-gray-600"></p>
                 </div>
                 <div id="modal-buttons" class="items-center px-4 py-3">
-                    <button id="modal-ok-btn" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <button id="modal-ok-btn" class="px-4 py-2 bg-indigo-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300">
                         OK
                     </button>
                 </div>
@@ -309,7 +327,7 @@
                 <div class="items-center px-4 py-3">
                      <div class="flex gap-4">
                         <button id="passcode-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">キャンセル</button>
-                        <button id="passcode-submit-btn" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">決定</button>
+                        <button id="passcode-submit-btn" class="px-4 py-2 bg-indigo-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300">決定</button>
                     </div>
                 </div>
             </div>
@@ -331,7 +349,7 @@
     <script type="module">
         // Firebase モジュールのインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, writeBatch, runTransaction, getDocs } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, writeBatch, runTransaction, getDocs, addDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
         
         // あなたのウェブアプリのFirebase設定
         const firebaseConfig = {
@@ -363,47 +381,13 @@
         const ADMIN_PASSCODE = '1322';
 
         // --- DOM要素 ---
-        const userTab = document.getElementById('user-tab');
-        const adminTab = document.getElementById('admin-tab');
-        const userView = document.getElementById('user-view');
-        const adminView = document.getElementById('admin-view');
-        const bentoNameInput = document.getElementById('bento-name');
-        const bentoStockInput = document.getElementById('bento-stock');
-        const registerBentoBtn = document.getElementById('register-bento-btn');
-        const clearHistoryBtn = document.getElementById('clear-history-btn');
-        const resetJokersBtn = document.getElementById('reset-jokers-btn');
-        const currentBentoName = document.getElementById('current-bento-name');
-        const currentBentoStock = document.getElementById('current-bento-stock');
-        const wishList = document.getElementById('wish-list');
-        const adminWishList = document.getElementById('admin-wish-list');
-        const takersList = document.getElementById('takers-list');
-        const statsList = document.getElementById('stats-list');
-        const historyList = document.getElementById('history-list');
-        const systemMessage = document.getElementById('system-message');
-        const bentoInfoCard = document.getElementById('bento-info-card');
-        const replayRouletteBtn = document.getElementById('replay-roulette-btn');
-        const jokerStatusList = document.getElementById('joker-status-list');
-        // Notification Modal
-        const customModal = document.getElementById('custom-modal');
-        const modalContent = document.getElementById('modal-content');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const modalButtons = document.getElementById('modal-buttons');
-        const modalIconContainer = document.getElementById('modal-icon-container');
-        // Passcode Modal
-        const passcodeModal = document.getElementById('passcode-modal');
-        const passcodeInput = document.getElementById('passcode-input');
-        const passcodeError = document.getElementById('passcode-error');
-        const passcodeSubmitBtn = document.getElementById('passcode-submit-btn');
-        const passcodeCancelBtn = document.getElementById('passcode-cancel-btn');
-        // Lottery Modal
-        const lotteryModal = document.getElementById('lottery-modal');
-        const lotteryTitle = document.getElementById('lottery-title');
-        const lotteryMessage = document.getElementById('lottery-message');
-        const lotteryCards = document.getElementById('lottery-cards');
-
-
-        document.getElementById('year').textContent = new Date().getFullYear();
+        let userTab, adminTab, userView, adminView, bentoNameInput, bentoStockInput, registerBentoBtn, 
+            clearPopularityHistoryBtn, resetJokersBtn, currentBentoName, currentBentoStock, 
+            wishList, adminWishList, takersList, statsList, historyList, bentoHistoryTableBody, 
+            systemMessage, bentoInfoCard, replayRouletteBtn, jokerStatusList, customModal, 
+            modalContent, modalTitle, modalMessage, modalButtons, modalIconContainer, 
+            passcodeModal, passcodeInput, passcodeError, passcodeSubmitBtn, passcodeCancelBtn,
+            lotteryModal, lotteryTitle, lotteryMessage, lotteryCards, adminBentoHistoryTableBody;
 
         // --- グローバル変数 ---
         let currentBento = null;
@@ -422,6 +406,7 @@
         const statsCol = collection(db, 'artifacts', appId, 'public', 'data', 'stats');
         const historyCol = collection(db, 'artifacts', appId, 'public', 'data', 'history');
         const jokersCol = collection(db, 'artifacts', appId, 'public', 'data', 'jokers');
+        const bentoHistoryCol = collection(db, 'artifacts', appId, 'public', 'data', 'bentoHistory');
 
         // --- モーダル関数 ---
         function showModal(message) {
@@ -430,7 +415,7 @@
             modalIconContainer.innerHTML = `<svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
             modalIconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100';
             
-            modalButtons.innerHTML = `<button id="modal-ok-btn" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">OK</button>`;
+            modalButtons.innerHTML = `<button id="modal-ok-btn" class="px-4 py-2 bg-indigo-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300">OK</button>`;
             document.getElementById('modal-ok-btn').addEventListener('click', hideModal);
 
             customModal.classList.remove('hidden');
@@ -447,7 +432,7 @@
             modalButtons.innerHTML = `
                 <div class="flex gap-4">
                     <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">キャンセル</button>
-                    <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">実行する</button>
+                    <button id="modal-confirm-btn" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">実行する</button>
                 </div>
             `;
             document.getElementById('modal-cancel-btn').addEventListener('click', hideModal);
@@ -523,12 +508,12 @@
             
             onSnapshot(statsCol, (snapshot) => {
                 const stats = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                updateStatsListUI(stats);
+                if(statsList) updateStatsListUI(stats);
             });
 
             onSnapshot(historyCol, (snapshot) => {
                 const history = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-                updateHistoryListUI(history);
+                if(historyList) updateHistoryListUI(history);
             });
 
             onSnapshot(jokersCol, (snapshot) => {
@@ -536,6 +521,12 @@
                 snapshot.docs.forEach(doc => jokers.set(doc.id, doc.data()));
                 updateJokerStatusUI();
                 updateWishListUI(); // JOKER status might affect buttons
+            });
+
+            onSnapshot(query(bentoHistoryCol, orderBy("date", "desc")), (snapshot) => {
+                 const history = snapshot.docs.map(doc => doc.data());
+                 if(bentoHistoryTableBody) updateBentoHistoryTable(history, bentoHistoryTableBody);
+                 if(adminBentoHistoryTableBody) updateBentoHistoryTable(history, adminBentoHistoryTableBody);
             });
         }
 
@@ -560,6 +551,7 @@
         }
         
         function updateJokerStatusUI(){
+            if(!jokerStatusList) return;
             jokerStatusList.innerHTML = '';
             MEMBERS.forEach(member => {
                  const jokerData = jokers.get(member.id);
@@ -575,6 +567,7 @@
         }
 
         function updateWishListUI() {
+            if(!wishList) return;
             wishList.innerHTML = '';
             const areTakersDecided = takers.size > 0;
             const noBento = !currentBento || currentBento.current_stock <= 0;
@@ -602,15 +595,15 @@
                     const canUseJoker = (new Date() - lastUsed) > twoMonths;
                     
                     const jokerButtonHtml = canUseJoker
-                        ? `<button data-id="${member.id}" class="joker-btn bg-purple-600 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-purple-700 btn">JOKERを使う</button>`
+                        ? `<button data-id="${member.id}" class="joker-btn bg-violet-500 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-violet-600 btn">JOKERを使う</button>`
                         : `<button class="bg-gray-400 text-white text-sm font-bold py-1 px-3 rounded-full btn" disabled title="使用済み">JOKER</button>`;
 
                     buttonHtml = `
                         <div class="flex flex-wrap gap-2 justify-end">
-                            <button data-id="${member.id}" class="wish-btn bg-green-500 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-green-600 btn">希望</button>
+                            <button data-id="${member.id}" class="wish-btn bg-teal-500 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-teal-600 btn">希望</button>
                              ${jokerButtonHtml}
-                            <button data-id="${member.id}" class="leftover-btn bg-yellow-500 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-yellow-600 btn">余るなら欲しい</button>
-                            <button data-id="${member.id}" class="no-wish-btn bg-red-600 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-red-700 btn">不要</button>
+                            <button data-id="${member.id}" class="leftover-btn bg-gray-400 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-gray-500 btn">余るなら欲しい</button>
+                            <button data-id="${member.id}" class="no-wish-btn bg-slate-400 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-slate-500 btn">不要</button>
                         </div>
                     `;
                 }
@@ -626,6 +619,7 @@
         }
         
         function updateAdminWishListUI() {
+            if(!adminWishList) return;
             adminWishList.innerHTML = '';
             
             if (!currentBento) {
@@ -663,6 +657,7 @@
         }
         
         function updateTakersListUI() {
+            if(!takersList) return;
             takersList.innerHTML = '';
             if (takers.size === 0) {
                 takersList.innerHTML = '<p class="text-gray-500">まだ誰も確定していません。</p>';
@@ -680,7 +675,7 @@
                     statusOrButtonHtml = `<span class="text-sm font-bold text-green-800">受け取り完了</span>`;
                 } else {
                     div.className = 'p-3 rounded-lg flex items-center justify-between bg-yellow-100';
-                    statusOrButtonHtml = `<button data-id="${id}" class="take-btn bg-orange-500 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-orange-600 btn">未受け取り</button>`;
+                    statusOrButtonHtml = `<button data-id="${id}" class="take-btn bg-sky-500 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-sky-600 btn">未受け取り</button>`;
                 }
 
                 div.innerHTML = `
@@ -694,6 +689,7 @@
         }
 
         function updateStatsListUI(stats) {
+            if(!statsList) return;
             statsList.innerHTML = '';
             if (!stats || stats.length === 0) {
                  statsList.innerHTML = '<p class="text-gray-500">まだ誰も受け取っていません。</p>';
@@ -716,6 +712,7 @@
         }
         
         function updateHistoryListUI(history) {
+             if(!historyList) return;
              historyList.innerHTML = '';
              if (!history || history.length === 0) {
                  historyList.innerHTML = '<p class="text-gray-500">まだ受け取り履歴はありません。</p>';
@@ -729,219 +726,254 @@
                 historyList.appendChild(div);
              });
         }
-
-        // --- イベントハンドラ ---
         
-        // Tab switching
-        userTab.addEventListener('click', () => {
-            userView.classList.remove('hidden');
-            adminView.classList.add('hidden');
-            userTab.classList.add('active');
-            adminTab.classList.remove('active');
-        });
-
-        adminTab.addEventListener('click', () => {
-            if (isAdminAuthenticated) {
-                 adminView.classList.remove('hidden');
-                 userView.classList.add('hidden');
-                 adminTab.classList.add('active');
-                 userTab.classList.remove('active');
-            } else {
-                showPasscodeModal();
-            }
-        });
-
-        // Passcode modal
-        passcodeSubmitBtn.addEventListener('click', () => {
-             if (passcodeInput.value === ADMIN_PASSCODE) {
-                isAdminAuthenticated = true;
-                hidePasscodeModal();
-                adminTab.click();
-            } else {
-                passcodeError.textContent = 'パスコードが違います。';
-                passcodeInput.value = '';
-                passcodeInput.focus();
-            }
-        });
-
-        passcodeCancelBtn.addEventListener('click', hidePasscodeModal);
-        
-        passcodeInput.addEventListener('input', () => {
-             passcodeError.textContent = '';
-             if (passcodeInput.value.length === 4) {
-                 passcodeSubmitBtn.click();
-             }
-        });
-
-
-        // Register bento
-        registerBentoBtn.addEventListener('click', async () => {
-            const name = bentoNameInput.value.trim();
-            const stock = parseInt(bentoStockInput.value, 10);
-
-            if (!name || isNaN(stock) || stock <= 0) {
-                showModal('有効な弁当の名前と個数を入力してください。');
+        function updateBentoHistoryTable(history, tableBody) {
+            if(!tableBody) return;
+            tableBody.innerHTML = ''; // Clear existing rows
+            if (history.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-4">履歴はありません。</td></tr>';
                 return;
             }
 
-            const batch = writeBatch(db);
-            const wishesSnapshot = await getDocs(wishesCol);
-            wishesSnapshot.forEach(doc => batch.delete(doc.ref));
-            const takersSnapshot = await getDocs(takersCol);
-            takersSnapshot.forEach(doc => batch.delete(doc.ref));
-            
-            const newBentoData = {
-                name: name,
-                initial_stock: stock,
-                current_stock: stock,
-                timestamp: new Date(),
-                lotteryCompleted: false,
-                lotteryApplicants: [],
-                lotteryWinners: []
-            };
-            batch.set(bentoDocRef, newBentoData);
+            history.forEach(item => {
+                const date = item.date.toDate();
+                const formattedDate = `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+                const row = `
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 px-4 text-sm">${formattedDate}</td>
+                        <td class="py-3 px-4 text-sm">${item.name}</td>
+                        <td class="py-3 px-4 text-center text-sm">${item.wisherCount}</td>
+                        <td class="py-3 px-4 text-center text-sm">${item.jokerUserCount}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
 
-            await batch.commit();
-            
-            bentoNameInput.value = '';
-            bentoStockInput.value = '';
-            showModal(`${name}を${stock}個で登録しました。`);
-        });
 
-        // Clear all history
-        clearHistoryBtn.addEventListener('click', () => {
-            showConfirmationModal('本当にすべての履歴とランキングを消去しますか？この操作は元に戻せません。', async () => {
-                clearHistoryBtn.disabled = true;
-                clearHistoryBtn.textContent = '消去中...';
-                try {
-                    const batch = writeBatch(db);
-                    
-                    const statsSnapshot = await getDocs(statsCol);
-                    statsSnapshot.forEach(doc => batch.delete(doc.ref));
+        // --- イベントハンドラ ---
+        
+        function setupEventListeners() {
+            // Tab switching
+            userTab.addEventListener('click', () => {
+                userView.classList.remove('hidden');
+                adminView.classList.add('hidden');
+                userTab.classList.add('active');
+                adminTab.classList.remove('active');
+            });
 
-                    const historySnapshot = await getDocs(historyCol);
-                    historySnapshot.forEach(doc => batch.delete(doc.ref));
-
-                    await batch.commit();
-                    showModal('すべての履歴とランキングが消去されました。');
-
-                } catch (error) {
-                    console.error("履歴の消去に失敗しました: ", error);
-                    showModal('履歴の消去に失敗しました。');
-                } finally {
-                    clearHistoryBtn.disabled = false;
-                    clearHistoryBtn.textContent = '全履歴を消去';
+            adminTab.addEventListener('click', () => {
+                if (isAdminAuthenticated) {
+                    adminView.classList.remove('hidden');
+                    userView.classList.add('hidden');
+                    adminTab.classList.add('active');
+                    userTab.classList.remove('active');
+                } else {
+                    showPasscodeModal();
                 }
             });
-        });
-        
-        // Reset Jokers
-        resetJokersBtn.addEventListener('click', () => {
-             showConfirmationModal('本当に全員のJOKERをリセットしますか？', async () => {
-                 resetJokersBtn.disabled = true;
-                 const batch = writeBatch(db);
-                 MEMBERS.forEach(member => {
-                     const jokerRef = doc(jokersCol, member.id);
-                     batch.set(jokerRef, { count: 1, lastUsed: new Date(0) });
-                 });
-                 await batch.commit();
-                 showModal('全員のJOKERがリセットされました。');
-                 resetJokersBtn.disabled = false;
-             });
-        });
 
-
-        // Wish button
-        wishList.addEventListener('click', async (e) => {
-            const target = e.target;
-            const userId = target.dataset.id;
-            if (!userId) return;
-
-            const member = MEMBERS.find(m => m.id === userId);
-            if (!member) return;
-            
-            const buttonContainer = target.parentElement;
-
-            if (target.classList.contains('wish-btn') || target.classList.contains('joker-btn') || target.classList.contains('leftover-btn') || target.classList.contains('no-wish-btn')) {
-                buttonContainer.innerHTML = '<span class="text-sm text-gray-500">処理中...</span>';
-                
-                let status = 'not_wishing';
-                let jokerUsed = false;
-                if(target.classList.contains('wish-btn')) status = 'wishing';
-                if(target.classList.contains('joker-btn')) {
-                    status = 'wishing';
-                    jokerUsed = true;
-                    const li = document.getElementById(`wish-item-${userId}`);
-                    li.classList.add('joker-flash');
-                    await new Promise(r => setTimeout(r, 1500));
-                    const jokerRef = doc(jokersCol, userId);
-                    await setDoc(jokerRef, { count: 0, lastUsed: new Date() }, { merge: true });
+            // Passcode modal
+            passcodeSubmitBtn.addEventListener('click', () => {
+                if (passcodeInput.value === ADMIN_PASSCODE) {
+                    isAdminAuthenticated = true;
+                    hidePasscodeModal();
+                    adminTab.click();
+                } else {
+                    passcodeError.textContent = 'パスコードが違います。';
+                    passcodeInput.value = '';
+                    passcodeInput.focus();
                 }
-                 if(target.classList.contains('leftover-btn')) status = 'leftover';
-                 if(target.classList.contains('no-wish-btn')) status = 'not_wishing';
+            });
 
-                await setDoc(doc(wishesCol, userId), {
-                    name: member.name,
-                    priority: member.priority,
-                    status: status,
-                    jokerUsed: jokerUsed,
-                    timestamp: new Date()
-                });
-            }
-        });
-        
-        // Take bento button
-        takersList.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('take-btn')) {
-                const takerId = e.target.dataset.id;
-                e.target.disabled = true;
+            passcodeCancelBtn.addEventListener('click', hidePasscodeModal);
+            
+            passcodeInput.addEventListener('input', () => {
+                passcodeError.textContent = '';
+                if (passcodeInput.value.length === 4) {
+                    passcodeSubmitBtn.click();
+                }
+            });
+
+            // Register bento
+            registerBentoBtn.addEventListener('click', async () => {
+                const name = bentoNameInput.value.trim();
+                const stock = parseInt(bentoStockInput.value, 10);
+
+                if (!name || isNaN(stock) || stock <= 0) {
+                    showModal('有効な弁当の名前と個数を入力してください。');
+                    return;
+                }
                 
                 try {
-                    await runTransaction(db, async (transaction) => {
-                        const bentoSnap = await transaction.get(bentoDocRef);
-                        const takerSnap = await transaction.get(doc(takersCol, takerId));
-                        const statDocRef = doc(statsCol, takerId);
-                        const statSnap = await transaction.get(statDocRef);
+                    if (currentBento && wishes.size > 0) {
+                        const wisherCount = Array.from(wishes.values()).filter(w => w.status === 'wishing').length;
+                        const jokerUserCount = Array.from(wishes.values()).filter(w => w.jokerUsed).length;
+                        
+                        const historyData = {
+                            name: currentBento.name,
+                            date: currentBento.timestamp,
+                            wisherCount: wisherCount,
+                            jokerUserCount: jokerUserCount
+                        };
+                        
+                        await addDoc(bentoHistoryCol, historyData);
+                    }
 
-                        if (!bentoSnap.exists() || bentoSnap.data().current_stock <= 0) throw "弁当の在庫がありません。";
-                        if (!takerSnap.exists() || takerSnap.data().taken) throw "すでに受け取り済みか、対象者ではありません。";
+                    const batch = writeBatch(db);
+                    const wishesSnapshot = await getDocs(wishesCol);
+                    wishesSnapshot.forEach(doc => batch.delete(doc.ref));
+                    const takersSnapshot = await getDocs(takersCol);
+                    takersSnapshot.forEach(doc => batch.delete(doc.ref));
+                    
+                    const newBentoData = {
+                        name: name,
+                        initial_stock: stock,
+                        current_stock: stock,
+                        timestamp: new Date(),
+                        lotteryCompleted: false,
+                        lotteryApplicants: [],
+                        lotteryWinners: []
+                    };
+                    batch.set(bentoDocRef, newBentoData);
 
-                        transaction.update(bentoDocRef, { current_stock: bentoSnap.data().current_stock - 1 });
-                        transaction.update(doc(takersCol, takerId), { taken: true });
-
-                        const newTotal = (statSnap.exists() ? statSnap.data().total_taken : 0) + 1;
-                        transaction.set(statDocRef, { total_taken: newTotal, name: takerSnap.data().name }, { merge: true });
-
-                        const historyDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'history'));
-                        transaction.set(historyDocRef, {
-                            userId: takerId,
-                            name: takerSnap.data().name,
-                            bento_name: bentoSnap.data().name,
-                            timestamp: new Date()
-                        });
-                    });
+                    await batch.commit();
+                    
+                    bentoNameInput.value = '';
+                    bentoStockInput.value = '';
+                    showModal(`${name}を${stock}個で登録しました。`);
                 } catch (error) {
-                    console.error("受け取り処理中にエラーが発生しました: ", error);
-                    showModal("エラーが発生しました：" + error);
+                    console.error("弁当登録エラー:", error);
+                    showModal("弁当の登録中にエラーが発生しました。");
                 }
-            }
-        });
+            });
+
+            // Clear Popularity history
+            clearPopularityHistoryBtn.addEventListener('click', () => {
+                showConfirmationModal('本当に人気投票の履歴を全て消去しますか？ランキングや個人の獲得履歴は残ります。', async () => {
+                    clearPopularityHistoryBtn.disabled = true;
+                    
+                    try {
+                        const batch = writeBatch(db);
+                        const bentoHistorySnapshot = await getDocs(bentoHistoryCol);
+                        bentoHistorySnapshot.forEach(doc => batch.delete(doc.ref));
+                        await batch.commit();
+                        showModal('人気投票の履歴が消去されました。');
+                    } catch (error) {
+                        console.error("人気投票履歴の消去に失敗しました: ", error);
+                        showModal('人気投票履歴の消去に失敗しました。');
+                    } finally {
+                        clearPopularityHistoryBtn.disabled = false;
+                    }
+                });
+            });
+            
+            // Reset Jokers
+            resetJokersBtn.addEventListener('click', () => {
+                showConfirmationModal('本当に全員のJOKERをリセットしますか？', async () => {
+                    resetJokersBtn.disabled = true;
+                    const batch = writeBatch(db);
+                    MEMBERS.forEach(member => {
+                        const jokerRef = doc(jokersCol, member.id);
+                        batch.set(jokerRef, { count: 1, lastUsed: new Date(0) });
+                    });
+                    await batch.commit();
+                    showModal('全員のJOKERがリセットされました。');
+                    resetJokersBtn.disabled = false;
+                });
+            });
+
+            // Wish button
+            wishList.addEventListener('click', async (e) => {
+                const target = e.target;
+                const userId = target.dataset.id;
+                if (!userId) return;
+
+                const member = MEMBERS.find(m => m.id === userId);
+                if (!member) return;
+                
+                const buttonContainer = target.parentElement;
+
+                if (target.classList.contains('wish-btn') || target.classList.contains('joker-btn') || target.classList.contains('leftover-btn') || target.classList.contains('no-wish-btn')) {
+                    buttonContainer.innerHTML = '<span class="text-sm text-gray-500">処理中...</span>';
+                    
+                    let status = 'not_wishing';
+                    let jokerUsed = false;
+                    if(target.classList.contains('wish-btn')) status = 'wishing';
+                    if(target.classList.contains('joker-btn')) {
+                        status = 'wishing';
+                        jokerUsed = true;
+                        const li = document.getElementById(`wish-item-${userId}`);
+                        li.classList.add('joker-flash');
+                        await new Promise(r => setTimeout(r, 1500));
+                        const jokerRef = doc(jokersCol, userId);
+                        await setDoc(jokerRef, { count: 0, lastUsed: new Date() }, { merge: true });
+                    }
+                    if(target.classList.contains('leftover-btn')) status = 'leftover';
+                    if(target.classList.contains('no-wish-btn')) status = 'not_wishing';
+
+                    await setDoc(doc(wishesCol, userId), {
+                        name: member.name,
+                        priority: member.priority,
+                        status: status,
+                        jokerUsed: jokerUsed,
+                        timestamp: new Date()
+                    });
+                }
+            });
+            
+            // Take bento button
+            takersList.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('take-btn')) {
+                    const takerId = e.target.dataset.id;
+                    e.target.disabled = true;
+                    
+                    try {
+                        await runTransaction(db, async (transaction) => {
+                            const bentoSnap = await transaction.get(bentoDocRef);
+                            const takerSnap = await transaction.get(doc(takersCol, takerId));
+                            const statDocRef = doc(statsCol, takerId);
+                            const statSnap = await transaction.get(statDocRef);
+
+                            if (!bentoSnap.exists() || bentoSnap.data().current_stock <= 0) throw "弁当の在庫がありません。";
+                            if (!takerSnap.exists() || takerSnap.data().taken) throw "すでに受け取り済みか、対象者ではありません。";
+
+                            transaction.update(bentoDocRef, { current_stock: bentoSnap.data().current_stock - 1 });
+                            transaction.update(doc(takersCol, takerId), { taken: true });
+
+                            const newTotal = (statSnap.exists() ? statSnap.data().total_taken : 0) + 1;
+                            transaction.set(statDocRef, { total_taken: newTotal, name: takerSnap.data().name }, { merge: true });
+
+                            const historyDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'history'));
+                            transaction.set(historyDocRef, {
+                                userId: takerId,
+                                name: takerSnap.data().name,
+                                bento_name: bentoSnap.data().name,
+                                timestamp: new Date()
+                            });
+                        });
+                    } catch (error) {
+                        console.error("受け取り処理中にエラーが発生しました: ", error);
+                        showModal("エラーが発生しました：" + error);
+                    }
+                }
+            });
+            
+            // Replay button
+            replayRouletteBtn.addEventListener('click', () => {
+                if (currentBento && currentBento.lotteryCompleted) {
+                    runLotteryProcess(currentBento.lotteryApplicants, currentBento.lotteryWinners, true);
+                }
+            });
+
+            // Modal close
+            customModal.addEventListener('click', (e) => {
+                if (e.target === customModal) {
+                    hideModal();
+                }
+            });
+        }
         
-        // Replay button
-        replayRouletteBtn.addEventListener('click', () => {
-            if (currentBento && currentBento.lotteryCompleted) {
-                runLotteryProcess(currentBento.lotteryApplicants, currentBento.lotteryWinners, true);
-            }
-        });
-
-
-        // Modal close
-        customModal.addEventListener('click', (e) => {
-            if (e.target === customModal) {
-                hideModal();
-            }
-        });
-
         // --- Lottery Logic ---
 
         function selectWinners(applicants, count) {
@@ -1112,7 +1144,6 @@
                 if (wishingMembers.length >= stock) {
                     // Lottery among wishing members
                     const winners = selectWinners(wishingMembers, stock);
-                    finalTakers = winners;
                     runLotteryProcess(wishingMembers, winners);
                 } else {
                     // All wishing members get a bento
@@ -1143,9 +1174,49 @@
         }
 
         // --- 初期化 ---
-        window.onload = () => {
+        document.addEventListener('DOMContentLoaded', () => {
+             // DOM要素の初期化
+            userTab = document.getElementById('user-tab');
+            adminTab = document.getElementById('admin-tab');
+            userView = document.getElementById('user-view');
+            adminView = document.getElementById('admin-view');
+            bentoNameInput = document.getElementById('bento-name');
+            bentoStockInput = document.getElementById('bento-stock');
+            registerBentoBtn = document.getElementById('register-bento-btn');
+            clearPopularityHistoryBtn = document.getElementById('clear-popularity-history-btn');
+            resetJokersBtn = document.getElementById('reset-jokers-btn');
+            currentBentoName = document.getElementById('current-bento-name');
+            currentBentoStock = document.getElementById('current-bento-stock');
+            wishList = document.getElementById('wish-list');
+            adminWishList = document.getElementById('admin-wish-list');
+            takersList = document.getElementById('takers-list');
+            statsList = document.getElementById('stats-list');
+            historyList = document.getElementById('history-list');
+            bentoHistoryTableBody = document.getElementById('bento-history-table-body');
+            adminBentoHistoryTableBody = document.getElementById('admin-bento-history-table-body');
+            systemMessage = document.getElementById('system-message');
+            bentoInfoCard = document.getElementById('bento-info-card');
+            replayRouletteBtn = document.getElementById('replay-roulette-btn');
+            jokerStatusList = document.getElementById('joker-status-list');
+            customModal = document.getElementById('custom-modal');
+            modalContent = document.getElementById('modal-content');
+            modalTitle = document.getElementById('modal-title');
+            modalMessage = document.getElementById('modal-message');
+            modalButtons = document.getElementById('modal-buttons');
+            modalIconContainer = document.getElementById('modal-icon-container');
+            passcodeModal = document.getElementById('passcode-modal');
+            passcodeInput = document.getElementById('passcode-input');
+            passcodeError = document.getElementById('passcode-error');
+            passcodeSubmitBtn = document.getElementById('passcode-submit-btn');
+            passcodeCancelBtn = document.getElementById('passcode-cancel-btn');
+            lotteryModal = document.getElementById('lottery-modal');
+            lotteryTitle = document.getElementById('lottery-title');
+            lotteryMessage = document.getElementById('lottery-message');
+            lotteryCards = document.getElementById('lottery-cards');
+
+            setupEventListeners();
             setupRealtimeListeners();
-        };
+        });
 
     </script>
 </body>
