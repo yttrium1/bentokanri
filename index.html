@@ -602,14 +602,14 @@
                     const canUseJoker = (new Date() - lastUsed) > twoMonths;
                     
                     const jokerButtonHtml = canUseJoker
-                        ? `<button data-id="${member.id}" class="joker-btn bg-purple-600 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-purple-700 btn">JOKER</button>`
+                        ? `<button data-id="${member.id}" class="joker-btn bg-purple-600 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-purple-700 btn">JOKERを使う</button>`
                         : `<button class="bg-gray-400 text-white text-sm font-bold py-1 px-3 rounded-full btn" disabled title="使用済み">JOKER</button>`;
 
                     buttonHtml = `
                         <div class="flex flex-wrap gap-2 justify-end">
-                            <button data-id="${member.id}" class="wish-btn bg-green-500 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-green-600 btn">欲しい！</button>
+                            <button data-id="${member.id}" class="wish-btn bg-green-500 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-green-600 btn">希望</button>
                              ${jokerButtonHtml}
-                            <button data-id="${member.id}" class="leftover-btn bg-yellow-500 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-yellow-600 btn">余るならほしい</button>
+                            <button data-id="${member.id}" class="leftover-btn bg-yellow-500 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-yellow-600 btn">余り希望</button>
                             <button data-id="${member.id}" class="no-wish-btn bg-red-600 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-red-700 btn">不要</button>
                         </div>
                     `;
@@ -1085,6 +1085,11 @@
 
             if (totalVotes === totalMembers) {
                 determinationInProgress = true;
+                
+                systemMessage.textContent = '全員の意思表示が完了しました。抽選処理中です...';
+                systemMessage.classList.replace('bg-yellow-100', 'bg-green-100');
+                systemMessage.classList.replace('text-yellow-800', 'text-green-800');
+
                 const stock = currentBento.initial_stock;
                 let finalTakers = [];
 
