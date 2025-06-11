@@ -134,7 +134,7 @@
             <h1 class="text-3xl md:text-4xl font-bold text-gray-800">弁当振分</h1>
             <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mt-4 text-left text-sm" role="alert">
                 <p class="font-bold">説明</p>
-                <p>説明会終了1時間以内に投票お願いします。未投票者は希望しないものとして扱います。当選者は実際に持ち帰ったら、ボタンをおしてください。2ヶ月に1回だけ当選確率が10倍になるJOKERを使えます。2枚以上保持できません。投票者数による弁当の人気度調査も兼ねています</p>
+                <p>説明会終了1時間以内に投票お願いします。未投票者は希望しないものとして扱います。当選者は実際に持ち帰ったら、ボタンをおしてください。2ヶ月に1回だけ当選確率が10倍になるJOKERを使えます。</p>
             </div>
         </header>
 
@@ -194,17 +194,17 @@
                             <p class="text-gray-500">まだ誰も確定していません。</p>
                         </div>
                     </div>
-                </div>
-            </div>
-             <!-- Past Bento Popularity -->
-            <div class="bg-white p-6 rounded-xl soft-shadow mt-8">
-                <h3 class="text-xl font-bold mb-4">🏆 弁当獲得ランキング</h3>
-                <div id="stats-list" class="space-y-2 mb-6">
-                    <!-- JSで累計数を生成 -->
-                </div>
-                <h3 class="text-xl font-bold mb-4 border-t pt-4">受け取り履歴</h3>
-                <div id="history-list" class="space-y-2 text-sm max-h-48 overflow-y-auto">
-                        <p class="text-gray-500">まだ受け取り履歴はありません。</p>
+
+                    <div class="bg-white p-6 rounded-xl soft-shadow">
+                        <h3 class="text-xl font-bold mb-4">🏆 弁当獲得ランキング</h3>
+                        <div id="stats-list" class="space-y-2 mb-6">
+                            <!-- JSで累計数を生成 -->
+                        </div>
+                        <h3 class="text-xl font-bold mb-4 border-t pt-4">受け取り履歴</h3>
+                        <div id="history-list" class="space-y-2 text-sm max-h-48 overflow-y-auto">
+                                <p class="text-gray-500">まだ受け取り履歴はありません。</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -238,10 +238,19 @@
                         <div class="flex items-center justify-between mb-4">
                              <div>
                                 <h3 class="font-bold">人気投票の履歴を消去</h3>
-                                <p class="text-sm text-gray-600 mt-1">人気投票の履歴のみを削除します。<br>ランキングや個人の獲得履歴は残ります。</p>
+                                <p class="text-sm text-gray-600 mt-1">人気投票の履歴のみを削除します。</p>
                             </div>
                             <button id="clear-popularity-history-btn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 btn">
-                                履歴消去
+                                投票履歴消去
+                            </button>
+                        </div>
+                         <div class="flex items-center justify-between border-t pt-4 mb-4">
+                             <div>
+                                <h3 class="font-bold">ランキングと個人履歴を消去</h3>
+                                <p class="text-sm text-gray-600 mt-1">弁当獲得ランキングと、個人の受け取り履歴を全て削除します。</p>
+                            </div>
+                            <button id="clear-ranking-history-btn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 btn">
+                                ランキング消去
                             </button>
                         </div>
                         <div class="flex items-center justify-between border-t pt-4">
@@ -387,7 +396,7 @@
             systemMessage, bentoInfoCard, replayRouletteBtn, jokerStatusList, customModal, 
             modalContent, modalTitle, modalMessage, modalButtons, modalIconContainer, 
             passcodeModal, passcodeInput, passcodeError, passcodeSubmitBtn, passcodeCancelBtn,
-            lotteryModal, lotteryTitle, lotteryMessage, lotteryCards, adminBentoHistoryTableBody;
+            lotteryModal, lotteryTitle, lotteryMessage, lotteryCards, adminBentoHistoryTableBody, clearRankingHistoryBtn;
 
         // --- グローバル変数 ---
         let currentBento = null;
@@ -525,7 +534,6 @@
 
             onSnapshot(query(bentoHistoryCol, orderBy("date", "desc")), (snapshot) => {
                  const history = snapshot.docs.map(doc => doc.data());
-                 if(bentoHistoryTableBody) updateBentoHistoryTable(history, bentoHistoryTableBody);
                  if(adminBentoHistoryTableBody) updateBentoHistoryTable(history, adminBentoHistoryTableBody);
             });
         }
@@ -602,7 +610,7 @@
                         <div class="flex flex-wrap gap-2 justify-end">
                             <button data-id="${member.id}" class="wish-btn bg-teal-500 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-teal-600 btn">希望</button>
                              ${jokerButtonHtml}
-                            <button data-id="${member.id}" class="leftover-btn bg-gray-400 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-gray-500 btn">余るなら欲しい</button>
+                            <button data-id="${member.id}" class="leftover-btn bg-gray-400 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-gray-500 btn">余り希望</button>
                             <button data-id="${member.id}" class="no-wish-btn bg-slate-400 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-slate-500 btn">不要</button>
                         </div>
                     `;
@@ -639,7 +647,7 @@
                         statusHtml = `<span class="text-sm font-bold text-blue-600">${wishData.jokerUsed ? 'JOKER希望' : '希望'}</span>`;
                     } else if (wishData.status === 'leftover') {
                         li.classList.add('bg-yellow-100');
-                        statusHtml = `<span class="text-sm font-bold text-yellow-700">余り希望</span>`;
+                        statusHtml = `<span class="text-sm font-bold text-yellow-700">余るなら希望</span>`;
                     } else if (wishData.status === 'not_wishing') {
                         li.classList.add('bg-gray-200');
                         statusHtml = `<span class="text-sm font-bold text-gray-500">不要</span>`;
@@ -850,7 +858,7 @@
 
             // Clear Popularity history
             clearPopularityHistoryBtn.addEventListener('click', () => {
-                showConfirmationModal('本当に人気投票の履歴を全て消去しますか？ランキングや個人の獲得履歴は残ります。', async () => {
+                showConfirmationModal('本当に人気投票の履歴を全て消去しますか？この操作は元に戻せません。', async () => {
                     clearPopularityHistoryBtn.disabled = true;
                     
                     try {
@@ -864,6 +872,30 @@
                         showModal('人気投票履歴の消去に失敗しました。');
                     } finally {
                         clearPopularityHistoryBtn.disabled = false;
+                    }
+                });
+            });
+
+             // Clear Ranking and Personal history
+            clearRankingHistoryBtn.addEventListener('click', () => {
+                showConfirmationModal('本当に弁当獲得ランキングと個人の受け取り履歴を全て消去しますか？この操作は元に戻せません。', async () => {
+                    clearRankingHistoryBtn.disabled = true;
+                    try {
+                        const batch = writeBatch(db);
+                        
+                        const statsSnapshot = await getDocs(statsCol);
+                        statsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+                        const historySnapshot = await getDocs(historyCol);
+                        historySnapshot.forEach(doc => batch.delete(doc.ref));
+
+                        await batch.commit();
+                        showModal('ランキングと個人の受け取り履歴が消去されました。');
+                    } catch (error) {
+                        console.error("ランキングと履歴の消去に失敗しました: ", error);
+                        showModal('ランキングと履歴の消去に失敗しました。');
+                    } finally {
+                        clearRankingHistoryBtn.disabled = false;
                     }
                 });
             });
@@ -1184,6 +1216,7 @@
             bentoStockInput = document.getElementById('bento-stock');
             registerBentoBtn = document.getElementById('register-bento-btn');
             clearPopularityHistoryBtn = document.getElementById('clear-popularity-history-btn');
+            clearRankingHistoryBtn = document.getElementById('clear-ranking-history-btn');
             resetJokersBtn = document.getElementById('reset-jokers-btn');
             currentBentoName = document.getElementById('current-bento-name');
             currentBentoStock = document.getElementById('current-bento-stock');
