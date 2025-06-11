@@ -115,6 +115,15 @@
         .winner-card .lottery-card-back {
             background: linear-gradient(45deg, #fde047, #f97316);
         }
+        /* Joker Effect */
+        @keyframes joker-glow {
+            0% { box-shadow: 0 0 5px #a855f7, 0 0 10px #a855f7, 0 0 15px #a855f7; }
+            50% { box-shadow: 0 0 20px #d8b4fe, 0 0 30px #d8b4fe, 0 0 40px #d8b4fe; }
+            100% { box-shadow: 0 0 5px #a855f7, 0 0 10px #a855f7, 0 0 15px #a855f7; }
+        }
+        .joker-flash {
+            animation: joker-glow 0.5s ease-in-out 3;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -123,7 +132,10 @@
 
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-800">弁当振分</h1>
-            <p class="text-gray-600 mt-2">弁当の希望の有無を表明してください。全員投票すると抽選が始まります。当選者は受け取ったら「未受け取り」ボタンをおしてください。</p>
+            <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mt-4 text-left text-sm" role="alert">
+                <p class="font-bold">説明</p>
+                <p>説明会終了1時間以内に投票お願いします。未投票者は希望しないものとして扱います。当選者は実際に持ち帰ったら、ボタンをおしてください。2ヶ月に1回だけ当選確率が10倍になるJOKERを使えます。</p>
+            </div>
         </header>
 
         <!-- Tab Navigation -->
@@ -159,6 +171,14 @@
 
                 <!-- 右カラム：確定者と履歴 -->
                 <div>
+                    <!-- JOKER Status -->
+                     <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                        <h3 class="text-xl font-bold mb-4">🃏 JOKER所持状況</h3>
+                        <div id="joker-status-list" class="space-y-2">
+                            <!-- JSでJOKER状況を生成 -->
+                        </div>
+                    </div>
+
                     <!-- 確定者リスト -->
                     <div class="bg-white p-6 rounded-xl shadow-md mb-8">
                         <div class="flex justify-between items-center mb-4">
@@ -216,13 +236,22 @@
                     <!-- 履歴消去パネル -->
                      <div class="bg-white p-6 rounded-xl shadow-md">
                         <h2 class="text-xl font-bold mb-4 border-b pb-2 text-red-600">危険な操作</h2>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between mb-4">
                              <div>
                                 <h3 class="font-bold">全履歴とランキングを消去</h3>
                                 <p class="text-sm text-gray-600 mt-1">すべての獲得ランキングと受け取り履歴を完全に削除します。この操作は元に戻せません。</p>
                             </div>
                             <button id="clear-history-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 btn">
                                 全履歴を消去
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between border-t pt-4">
+                             <div>
+                                <h3 class="font-bold">全JOKERをリセット</h3>
+                                <p class="text-sm text-gray-600 mt-1">全員のJOKERを1枚にリセットします。</p>
+                            </div>
+                            <button id="reset-jokers-btn" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 btn">
+                                JOKERリセット
                             </button>
                         </div>
                     </div>
@@ -342,6 +371,7 @@
         const bentoStockInput = document.getElementById('bento-stock');
         const registerBentoBtn = document.getElementById('register-bento-btn');
         const clearHistoryBtn = document.getElementById('clear-history-btn');
+        const resetJokersBtn = document.getElementById('reset-jokers-btn');
         const currentBentoName = document.getElementById('current-bento-name');
         const currentBentoStock = document.getElementById('current-bento-stock');
         const wishList = document.getElementById('wish-list');
@@ -352,6 +382,7 @@
         const systemMessage = document.getElementById('system-message');
         const bentoInfoCard = document.getElementById('bento-info-card');
         const replayRouletteBtn = document.getElementById('replay-roulette-btn');
+        const jokerStatusList = document.getElementById('joker-status-list');
         // Notification Modal
         const customModal = document.getElementById('custom-modal');
         const modalContent = document.getElementById('modal-content');
@@ -378,6 +409,7 @@
         let currentBento = null;
         let wishes = new Map();
         let takers = new Map();
+        let jokers = new Map();
         let determinationInProgress = false;
         let isAdminAuthenticated = false;
         let isLotteryRunning = false;
@@ -389,6 +421,7 @@
         const takersCol = collection(db, 'artifacts', appId, 'public', 'data', 'takers');
         const statsCol = collection(db, 'artifacts', appId, 'public', 'data', 'stats');
         const historyCol = collection(db, 'artifacts', appId, 'public', 'data', 'history');
+        const jokersCol = collection(db, 'artifacts', appId, 'public', 'data', 'jokers');
 
         // --- モーダル関数 ---
         function showModal(message) {
@@ -497,6 +530,13 @@
                 const history = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.toMillis() - a.timestamp.toMillis());
                 updateHistoryListUI(history);
             });
+
+            onSnapshot(jokersCol, (snapshot) => {
+                jokers.clear();
+                snapshot.docs.forEach(doc => jokers.set(doc.id, doc.data()));
+                updateJokerStatusUI();
+                updateWishListUI(); // JOKER status might affect buttons
+            });
         }
 
         // --- UI更新関数 ---
@@ -518,6 +558,21 @@
             takersList.innerHTML = '<p class="text-gray-500">まだ誰も確定していません。</p>';
             replayRouletteBtn.classList.add('hidden');
         }
+        
+        function updateJokerStatusUI(){
+            jokerStatusList.innerHTML = '';
+            MEMBERS.forEach(member => {
+                 const jokerData = jokers.get(member.id);
+                 const hasJoker = (jokerData?.count ?? 1) > 0;
+                 const div = document.createElement('div');
+                 div.className = 'flex justify-between items-center text-sm';
+                 div.innerHTML = `
+                    <span>${member.name}</span>
+                    <span class="font-bold ${hasJoker ? 'text-green-600' : 'text-gray-400'}">${hasJoker ? '所持' : 'なし'}</span>
+                 `;
+                 jokerStatusList.appendChild(div);
+            });
+        }
 
         function updateWishListUI() {
             wishList.innerHTML = '';
@@ -527,6 +582,7 @@
             MEMBERS.forEach(member => {
                 const wishData = wishes.get(member.id);
                 const li = document.createElement('div');
+                li.id = `wish-item-${member.id}`;
                 li.className = `p-3 rounded-lg flex items-center justify-between transition`;
 
                 let statusHtml = '';
@@ -540,10 +596,21 @@
                 }
 
                 if (!wishData && !areTakersDecided && !noBento) {
+                    const twoMonths = 2 * 30 * 24 * 60 * 60 * 1000;
+                    const jokerData = jokers.get(member.id);
+                    const lastUsed = jokerData?.lastUsed?.toDate() ?? new Date(0);
+                    const canUseJoker = (new Date() - lastUsed) > twoMonths;
+                    
+                    const jokerButtonHtml = canUseJoker
+                        ? `<button data-id="${member.id}" class="joker-btn bg-purple-600 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-purple-700 btn">JOKER</button>`
+                        : `<button class="bg-gray-400 text-white text-sm font-bold py-1 px-3 rounded-full btn" disabled title="使用済み">JOKER</button>`;
+
                     buttonHtml = `
-                        <div class="flex space-x-2">
-                            <button data-id="${member.id}" class="wish-btn bg-green-500 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-green-600 btn">希望する</button>
-                            <button data-id="${member.id}" class="no-wish-btn bg-gray-400 text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-500 btn">不要</button>
+                        <div class="flex flex-wrap gap-2 justify-end">
+                            <button data-id="${member.id}" class="wish-btn bg-green-500 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-green-600 btn">欲しい！</button>
+                             ${jokerButtonHtml}
+                            <button data-id="${member.id}" class="leftover-btn bg-yellow-500 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-yellow-600 btn">余るならほしい</button>
+                            <button data-id="${member.id}" class="no-wish-btn bg-red-600 text-white text-sm font-bold py-1 px-2 rounded-full hover:bg-red-700 btn">不要</button>
                         </div>
                     `;
                 }
@@ -573,9 +640,12 @@
                 let statusHtml = '<span class="text-sm text-gray-400">未表明</span>';
 
                 if (wishData) {
-                    if (wishData.status === 'wishing') {
+                     if (wishData.status === 'wishing') {
                         li.classList.add('bg-blue-100');
-                        statusHtml = `<span class="text-sm font-bold text-blue-600">希望</span>`;
+                        statusHtml = `<span class="text-sm font-bold text-blue-600">${wishData.jokerUsed ? 'JOKER希望' : '希望'}</span>`;
+                    } else if (wishData.status === 'leftover') {
+                        li.classList.add('bg-yellow-100');
+                        statusHtml = `<span class="text-sm font-bold text-yellow-700">余り希望</span>`;
                     } else if (wishData.status === 'not_wishing') {
                         li.classList.add('bg-gray-200');
                         statusHtml = `<span class="text-sm font-bold text-gray-500">不要</span>`;
@@ -683,7 +753,7 @@
 
         // Passcode modal
         passcodeSubmitBtn.addEventListener('click', () => {
-            if (passcodeInput.value === ADMIN_PASSCODE) {
+             if (passcodeInput.value === ADMIN_PASSCODE) {
                 isAdminAuthenticated = true;
                 hidePasscodeModal();
                 adminTab.click();
@@ -693,7 +763,9 @@
                 passcodeInput.focus();
             }
         });
+
         passcodeCancelBtn.addEventListener('click', hidePasscodeModal);
+        
         passcodeInput.addEventListener('input', () => {
              passcodeError.textContent = '';
              if (passcodeInput.value.length === 4) {
@@ -762,6 +834,21 @@
                 }
             });
         });
+        
+        // Reset Jokers
+        resetJokersBtn.addEventListener('click', () => {
+             showConfirmationModal('本当に全員のJOKERをリセットしますか？', async () => {
+                 resetJokersBtn.disabled = true;
+                 const batch = writeBatch(db);
+                 MEMBERS.forEach(member => {
+                     const jokerRef = doc(jokersCol, member.id);
+                     batch.set(jokerRef, { count: 1, lastUsed: new Date(0) });
+                 });
+                 await batch.commit();
+                 showModal('全員のJOKERがリセットされました。');
+                 resetJokersBtn.disabled = false;
+             });
+        });
 
 
         // Wish button
@@ -775,13 +862,29 @@
             
             const buttonContainer = target.parentElement;
 
-            if (target.classList.contains('wish-btn') || target.classList.contains('no-wish-btn')) {
+            if (target.classList.contains('wish-btn') || target.classList.contains('joker-btn') || target.classList.contains('leftover-btn') || target.classList.contains('no-wish-btn')) {
                 buttonContainer.innerHTML = '<span class="text-sm text-gray-500">処理中...</span>';
-                const status = target.classList.contains('wish-btn') ? 'wishing' : 'not_wishing';
+                
+                let status = 'not_wishing';
+                let jokerUsed = false;
+                if(target.classList.contains('wish-btn')) status = 'wishing';
+                if(target.classList.contains('joker-btn')) {
+                    status = 'wishing';
+                    jokerUsed = true;
+                    const li = document.getElementById(`wish-item-${userId}`);
+                    li.classList.add('joker-flash');
+                    await new Promise(r => setTimeout(r, 1500));
+                    const jokerRef = doc(jokersCol, userId);
+                    await setDoc(jokerRef, { count: 0, lastUsed: new Date() }, { merge: true });
+                }
+                 if(target.classList.contains('leftover-btn')) status = 'leftover';
+                 if(target.classList.contains('no-wish-btn')) status = 'not_wishing';
+
                 await setDoc(doc(wishesCol, userId), {
                     name: member.name,
                     priority: member.priority,
                     status: status,
+                    jokerUsed: jokerUsed,
                     timestamp: new Date()
                 });
             }
@@ -845,12 +948,18 @@
             let currentApplicants = [...applicants];
             let winners = [];
             for (let i = 0; i < count; i++) {
-                const totalWeight = currentApplicants.reduce((sum, p) => sum + p.weight, 0);
+                 let weightedApplicants = currentApplicants.map(p => {
+                    const wish = wishes.get(p.id);
+                    const weight = wish && wish.jokerUsed ? p.weight * 10 : p.weight;
+                    return {...p, finalWeight: weight};
+                 });
+
+                const totalWeight = weightedApplicants.reduce((sum, p) => sum + p.finalWeight, 0);
                 if (totalWeight === 0) break;
                 
                 let random = Math.random() * totalWeight;
-                for (const applicant of currentApplicants) {
-                    random -= applicant.weight;
+                for (const applicant of weightedApplicants) {
+                    random -= applicant.finalWeight;
                     if (random < 0) {
                         winners.push(applicant);
                         currentApplicants = currentApplicants.filter(p => p.id !== applicant.id);
@@ -936,7 +1045,6 @@
         async function saveTakers(applicants, winners) {
             try {
                 const batch = writeBatch(db);
-                // 1. Create taker documents for winners
                 winners.forEach(taker => {
                     const member = MEMBERS.find(m => m.id === taker.id);
                     if (member) {
@@ -949,10 +1057,9 @@
                     }
                 });
                 
-                // 2. Mark lottery as complete and save results on bento doc
                 const lotteryResult = {
                     lotteryCompleted: true,
-                    lotteryApplicants: applicants.map(a => ({ id: a.id, name: a.name })), // Store simplified info
+                    lotteryApplicants: applicants.map(a => ({ id: a.id, name: a.name })), 
                     lotteryWinners: winners.map(w => ({ id: w.id, name: w.name }))
                 };
                 batch.update(bentoDocRef, lotteryResult);
@@ -979,26 +1086,46 @@
             if (totalVotes === totalMembers) {
                 determinationInProgress = true;
                 const stock = currentBento.initial_stock;
+                let finalTakers = [];
+
                 const wishingMembers = Array.from(wishes.values())
                     .filter(w => w.status === 'wishing')
                     .map(wisher => MEMBERS.find(m => m.priority === wisher.priority))
                     .sort((a, b) => a.priority - b.priority);
 
-                if (wishingMembers.length === 0) {
-                    systemMessage.textContent = '全員が意思表示しましたが、希望者はいませんでした。';
-                    systemMessage.classList.replace('bg-yellow-100', 'bg-green-100');
-                    systemMessage.classList.replace('text-yellow-800', 'text-green-800');
-                    // Mark as complete even if no one wishes
-                    await updateDoc(bentoDocRef, { lotteryCompleted: true });
-                    determinationInProgress = false;
-                    return;
+                const leftoverMembers = Array.from(wishes.values())
+                    .filter(w => w.status === 'leftover')
+                    .map(wisher => MEMBERS.find(m => m.priority === wisher.priority))
+                    .sort((a, b) => a.priority - b.priority);
+
+                if (wishingMembers.length === 0 && leftoverMembers.length === 0) {
+                     await updateDoc(bentoDocRef, { lotteryCompleted: true });
+                     determinationInProgress = false;
+                     return;
                 }
                 
-                if (stock < wishingMembers.length) {
+                if (wishingMembers.length >= stock) {
+                    // Lottery among wishing members
                     const winners = selectWinners(wishingMembers, stock);
+                    finalTakers = winners;
                     runLotteryProcess(wishingMembers, winners);
                 } else {
-                    await saveTakers(wishingMembers, wishingMembers);
+                    // All wishing members get a bento
+                    finalTakers = [...wishingMembers];
+                    let remainingStock = stock - wishingMembers.length;
+
+                    if (remainingStock > 0 && leftoverMembers.length > 0) {
+                        if (leftoverMembers.length <= remainingStock) {
+                            // All leftover members get a bento
+                            finalTakers.push(...leftoverMembers);
+                        } else {
+                            // Lottery among leftover members for remaining stock
+                            const leftoverWinners = selectWinners(leftoverMembers, remainingStock);
+                            finalTakers.push(...leftoverWinners);
+                            // No lottery animation for leftovers to keep it simple
+                        }
+                    }
+                    await saveTakers(wishingMembers.concat(leftoverMembers), finalTakers);
                 }
             } else if (currentBento && totalVotes >= 0) {
                 const remainingVotes = totalMembers - totalVotes;
