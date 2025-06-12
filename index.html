@@ -647,7 +647,7 @@
                         statusHtml = `<span class="text-sm font-bold text-blue-600">${wishData.jokerUsed ? 'JOKER希望' : '希望'}</span>`;
                     } else if (wishData.status === 'leftover') {
                         li.classList.add('bg-yellow-100');
-                        statusHtml = `<span class="text-sm font-bold text-yellow-700">余るなら希望</span>`;
+                        statusHtml = `<span class="text-sm font-bold text-yellow-700">余り希望</span>`;
                     } else if (wishData.status === 'not_wishing') {
                         li.classList.add('bg-gray-200');
                         statusHtml = `<span class="text-sm font-bold text-gray-500">不要</span>`;
@@ -1034,6 +1034,11 @@
             return winners;
         }
 
+        function selectWinnersEqually(applicants, count) {
+            const shuffled = [...applicants].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
         async function runLotteryProcess(applicants, preselectedWinners, isReplay = false) {
             if (isLotteryRunning) return;
             isLotteryRunning = true;
@@ -1188,9 +1193,8 @@
                             finalTakers.push(...leftoverMembers);
                         } else {
                             // Lottery among leftover members for remaining stock
-                            const leftoverWinners = selectWinners(leftoverMembers, remainingStock);
+                            const leftoverWinners = selectWinnersEqually(leftoverMembers, remainingStock);
                             finalTakers.push(...leftoverWinners);
-                            // No lottery animation for leftovers to keep it simple
                         }
                     }
                     await saveTakers(wishingMembers.concat(leftoverMembers), finalTakers);
