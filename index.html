@@ -183,12 +183,6 @@
                     <div class="bg-white p-6 rounded-xl soft-shadow mb-8">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-bold">🎉 本日の弁当GET組</h3>
-                            <button id="replay-roulette-btn" class="hidden bg-gray-200 text-gray-700 text-xs font-bold py-1 px-2 rounded-md hover:bg-gray-300 btn flex items-center gap-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7V9a1 1 0 01-2 0V3a1 1 0 011-1zm12 1a1 1 0 011 1v6a1 1 0 01-2 0V9.899a7.002 7.002 0 01-11.601-2.566 1 1 0 111.885-.666A5.002 5.002 0 0014.001 13V11a1 1 0 012 0v6a1 1 0 01-1 1H9a1 1 0 110-2h4.001v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 111.885-.666A5.002 5.002 0 0014.001 7V9a1 1 0 012 0V3a1 1 0 01-1-1h4z" clip-rule="evenodd" />
-                                </svg>
-                                再生
-                            </button>
                         </div>
                         <div id="takers-list" class="space-y-3">
                             <p class="text-gray-500">まだ誰も確定していません。</p>
@@ -474,6 +468,49 @@
             passcodeModal.classList.add('hidden');
         }
 
+        function showReplayConfirmationModal(message, onConfirm, onCancel) {
+            modalTitle.textContent = '抽選結果';
+            modalMessage.textContent = message;
+            modalIconContainer.innerHTML = `<svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.55-3.27A1 1 0 0121 7.54v8.92a1 1 0 01-1.45.89L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
+            modalIconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100';
+
+            modalButtons.innerHTML = `
+                <div class="flex gap-4">
+                    <button id="modal-no-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">いいえ</button>
+                    <button id="modal-yes-btn" class="px-4 py-2 bg-indigo-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300">はい</button>
+                </div>
+            `;
+            const noBtn = document.getElementById('modal-no-btn');
+            const yesBtn = document.getElementById('modal-yes-btn');
+            
+            const handleNo = () => {
+                hideModal();
+                if(onCancel) onCancel();
+                customModal.removeEventListener('click', handleModalBgClick);
+            };
+
+            const handleYes = () => {
+                hideModal();
+                if(onConfirm) onConfirm();
+                customModal.removeEventListener('click', handleModalBgClick);
+            };
+            
+            const handleModalBgClick = (e) => {
+                 if (e.target === customModal) {
+                    handleNo();
+                 }
+            };
+            
+            noBtn.addEventListener('click', handleNo, { once: true });
+            yesBtn.addEventListener('click', handleYes, { once: true });
+            customModal.addEventListener('click', handleModalBgClick);
+
+
+            customModal.classList.remove('hidden');
+            modalContent.classList.remove('modal-leave', 'modal-leave-active');
+            modalContent.classList.add('modal-enter-active');
+        }
+
 
         // --- リアルタイムリスナー設定 ---
         function setupRealtimeListeners() {
@@ -488,11 +525,22 @@
                          setTimeout(() => bentoInfoCard.classList.remove('pulse'), 2000);
                     }
 
-                    if (currentBento.lotteryCompleted) {
-                        replayRouletteBtn.classList.remove('hidden');
-                    } else {
-                        replayRouletteBtn.classList.add('hidden');
+                    if (currentBento.lotteryCompleted && !isLotteryRunning) {
+                        const seenLotteryKey = `seenLottery_${currentBento.timestamp.seconds}`;
+                        if (!localStorage.getItem(seenLotteryKey)) {
+                            showReplayConfirmationModal(
+                                '前回の抽選結果を確認しますか？',
+                                () => {
+                                    runLotteryProcess(currentBento.lotteryApplicants, currentBento.lotteryWinners, true);
+                                    localStorage.setItem(seenLotteryKey, 'true');
+                                },
+                                () => {
+                                    localStorage.setItem(seenLotteryKey, 'true');
+                                }
+                            );
+                        }
                     }
+
                 } else {
                     currentBento = null;
                     resetUI();
@@ -555,7 +603,6 @@
             wishList.innerHTML = '';
             adminWishList.innerHTML = '<p class="text-gray-500">弁当が登録されていません。</p>';
             takersList.innerHTML = '<p class="text-gray-500">まだ誰も確定していません。</p>';
-            replayRouletteBtn.classList.add('hidden');
         }
         
         function updateJokerStatusUI(){
@@ -991,13 +1038,8 @@
                 }
             });
             
-            // Replay button
-            replayRouletteBtn.addEventListener('click', () => {
-                if (currentBento && currentBento.lotteryCompleted) {
-                    runLotteryProcess(currentBento.lotteryApplicants, currentBento.lotteryWinners, true);
-                }
-            });
-
+            // Replay button (Now handled by the confirmation modal)
+            
             // Modal close
             customModal.addEventListener('click', (e) => {
                 if (e.target === customModal) {
@@ -1045,8 +1087,7 @@
 
             lotteryModal.classList.remove('hidden');
             lotteryTitle.textContent = isReplay ? '抽選結果の再生' : '運命の抽選！';
-            if (replayRouletteBtn) replayRouletteBtn.disabled = true;
-
+            
             // 1. Create cards
             lotteryCards.innerHTML = '';
             applicants.forEach(applicant => {
@@ -1103,7 +1144,6 @@
             // 5. Clean up
             await new Promise(r => setTimeout(r, 4000));
             lotteryModal.classList.add('hidden');
-            if(replayRouletteBtn) replayRouletteBtn.disabled = false;
             
             if (!isReplay) {
                 await saveTakers(applicants, preselectedWinners);
@@ -1258,3 +1298,5 @@
     </script>
 </body>
 </html>
+" of the document "弁当在庫管理アプリ（管理者機能分離）" and am asking a question about it. Please refer to this code to answer my query.
+The user wants to remove the history list in the user view. How can I do th
